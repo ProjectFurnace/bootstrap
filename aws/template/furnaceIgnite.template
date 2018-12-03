@@ -330,7 +330,7 @@
                 "Family": "updateStackTasks"
             }
         },
-        "stackUpdaterRole": {
+        "deployExecLambdaRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "AssumeRolePolicyDocument": {
@@ -354,7 +354,7 @@
                 ],
                 "Policies": [
                     {
-                        "PolicyName": "stackUpdateRolePolicy",
+                        "PolicyName": "deployExecLambdaRolePolicy",
                         "PolicyDocument": {
                             "Version": "2012-10-17",
                             "Statement": [
@@ -389,13 +389,13 @@
                 ]
             }
         },
-        "stackUpdater": {
+        "deployExecLambda": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "Handler": "index.handler",
                 "Role": {
                     "Fn::GetAtt": [
-                        "stackUpdaterRole",
+                        "deployExecLambdaRole",
                         "Arn"
                     ]
                 },
@@ -461,13 +461,13 @@
                 "MemorySize": 128
             }
         },
-        "stackUpdaterSubscription": {
+        "deployExecLambdaSubscription": {
             "Type": "AWS::SNS::Subscription",
             "Properties": {
                 "Protocol": "lambda",
                 "Endpoint": {
                     "Fn::GetAtt": [
-                        "stackUpdater",
+                        "deployExecLambda",
                         "Arn"
                     ]
                 },
