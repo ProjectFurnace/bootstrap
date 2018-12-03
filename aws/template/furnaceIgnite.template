@@ -547,7 +547,7 @@
                 "Runtime": "nodejs8.10",
                 "Environment": {
                     "Variables": {
-                        "TOPIC": {"Fn::GetAtt": ["FurnaceSNSTopic", "Arn"]}
+                        "TOPIC": { "Ref": "FurnaceSNSTopic" }
                     }
                 }
             }
