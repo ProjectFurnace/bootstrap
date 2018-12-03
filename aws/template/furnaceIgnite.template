@@ -492,6 +492,7 @@
 
 
         "deployTriggerLambda": {
+            "DependsOn": ["FurnaceSNSTopic"],
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
@@ -506,42 +507,49 @@
                     "",
                     "    if (body.remoteUrl && body.commitRef) {",
                     "      const params = {",
-                    "        Message: {",
+                    "        Message: JSON.stringify({",
+                    "          default: 'Furnace deploy',",
                     "          remoteUrl: body.remoteUrl,",
                     "          commitRef: body.commitRef,",
-                    "        },",
+                    "        }),",
                     "        TopicArn: process.env.TOPIC,",
-                    "        MessageStructure: 'JSON',",
+                    "        MessageStructure: 'json',",
                     "      };",
                     "",
                     "     // Create promise and SNS service object",
                     "     const publishTextPromise = sns.publish(params).promise();",
                     "",
                     "     // Handle promise's fulfilled/rejected states",
-                    "     publishTextPromise.then((data) => {",
+                    "     await publishTextPromise.then((data) => {",
                     "       if (process.env.DEBUG) {",
                     "         // eslint-disable-next-line no-console",
                     "         console.log(`Message ${params.Message} send sent to the topic ${params.TopicArn} with ID ${data.MessageId}`);",
                     "       }",
-                    "       callback(null, { statusCode: 200, body: 'Successful' });",
+                    "       callback(null, { statusCode: 200, body: JSON.stringify({msg:'Successful'})});",
                     "     }).catch((err) => {",
                     "       if (process.env.DEBUG) {",
                     "         // eslint-disable-next-line no-console",
                     "         console.error(err, err.stack);",
                     "        }",
-                    "        callback(err);",
+                    "        callback(null, {statusCode: 500, body: JSON.stringify({error:'Something went wrong...'})});",
                     "      });",
                     "    }",
+                    "    callback(null, {statusCode: 422, body: JSON.stringify({error:'Parameters missing'})});",
                     "  }",
                     "};",
                     ""
                 ]]}
-              },
-              "Description": "Lambda function to trigger the deployment of Furnace",
-              "FunctionName": "deployTriggerLambda",
-              "Handler": "index.handler",
-              "Role": { "Fn::GetAtt": ["deployTriggerLambdaRole", "Arn"]},
-              "Runtime": "nodejs8.10"
+                },
+                "Description": "Lambda function to trigger the deployment of Furnace",
+                "FunctionName": "deployTriggerLambda",
+                "Handler": "index.handler",
+                "Role": { "Fn::GetAtt": ["deployTriggerLambdaRole", "Arn"]},
+                "Runtime": "nodejs8.10",
+                "Environment": {
+                    "Variables": {
+                        "TOPIC": {"Fn::GetAtt": ["FurnaceSNSTopic", "Arn"]}
+                    }
+                }
             }
           },
           
@@ -663,15 +671,15 @@
             "DependsOn": ["apiGatewayAccount"],
             "Type": "AWS::ApiGateway::Stage",
             "Properties": {
-            "DeploymentId": {"Ref": "apiDeployment"},
-            "MethodSettings": [{
-                "DataTraceEnabled": true,
-                "HttpMethod": "*",
-                "LoggingLevel": "INFO",
-                "ResourcePath": "/*"
-            }],
-            "RestApiId": {"Ref": "api"},
-            "StageName": "LATEST"
+                "DeploymentId": {"Ref": "apiDeployment"},
+                "MethodSettings": [{
+                    "DataTraceEnabled": true,
+                    "HttpMethod": "*",
+                    "LoggingLevel": "INFO",
+                    "ResourcePath": "/*"
+                }],
+                "RestApiId": {"Ref": "api"},
+                "StageName": "v1"
             }
         },
         "apiDeployment": {
@@ -680,8 +688,7 @@
             "Properties": {
                 "RestApiId": {
                     "Ref": "api"
-                },
-                "StageName": "Dev"
+                }
             }
         }
     }
