@@ -1,0 +1,200 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+                "deployTriggerLambda": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "ZipFile": { "Fn::Join": ["\n", [
+                    "const AWS = require('aws-sdk');",
+                    "",
+                    "const sns = new AWS.SNS({ apiVersion: '2010-03-31' });",
+                    "",
+                    "exports.handler = async (event, context, callback) => {",
+                    "  if (event.body != null) {",
+                    "    const body = JSON.parse(event.body);",
+                    "",
+                    "    if (body.remoteUrl && body.commitRef) {",
+                    "      const params = {",
+                    "        Message: {",
+                    "          remoteUrl: body.remoteUrl,",
+                    "          commitRef: body.commitRef,",
+                    "        },",
+                    "        TopicArn: process.env.TOPIC,",
+                    "        MessageStructure: 'JSON',",
+                    "      };",
+                    "",
+                    "     // Create promise and SNS service object",
+                    "     const publishTextPromise = sns.publish(params).promise();",
+                    "",
+                    "     // Handle promise's fulfilled/rejected states",
+                    "     publishTextPromise.then((data) => {",
+                    "       if (process.env.DEBUG) {",
+                    "         // eslint-disable-next-line no-console",
+                    "         console.log(`Message ${params.Message} send sent to the topic ${params.TopicArn} with ID ${data.MessageId}`);",
+                    "       }",
+                    "       callback(null, { statusCode: 200, body: 'Successful' });",
+                    "     }).catch((err) => {",
+                    "       if (process.env.DEBUG) {",
+                    "         // eslint-disable-next-line no-console",
+                    "         console.error(err, err.stack);",
+                    "        }",
+                    "        callback(err);",
+                    "      });",
+                    "    }",
+                    "  }",
+                    "};",
+                    ""
+                ]]}
+              },
+              "Description": "Lambda function to trigger the deployment of Furnace",
+              "FunctionName": "deployTriggerLambda",
+              "Handler": "index.handler",
+              "Role": { "Fn::GetAtt": ["deployTriggerLambdaRole", "Arn"]},
+              "Runtime": "nodejs8.10"
+            }
+          },
+          
+          "deployTriggerLambdaRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [{
+                  "Effect": "Allow",
+                  "Principal": { "Service": ["lambda.amazonaws.com"] },
+                  "Action": ["sts:AssumeRole"]
+                }]
+              },
+              "ManagedPolicyArns": [
+                  "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                  "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
+                ]
+            }
+          },
+                "apiResource": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+                "RestApiId": {
+                    "Ref": "api"
+                },
+                "PathPart": "api",
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "api",
+                        "RootResourceId"
+                    ]
+                }
+            }
+        },
+        "deployResource": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+                "PathPart": "deploy",
+                "ParentId": {
+                    "Ref": "apiResource"
+                },
+                "RestApiId": {"Ref":"api"}
+            }
+        },
+        "deployPOST": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+                "HttpMethod": "POST",
+                "RestApiId": {
+                    "Ref": "api"
+                },
+                "ResourceId": {
+                    "Ref": "deployResource"
+                },
+                "AuthorizationType": "NONE",
+                "Integration": {
+                    "Type": "AWS_PROXY",
+                    "IntegrationHttpMethod": "POST",
+                    "Uri": {"Fn::Join": ["",
+                        ["arn:aws:apigateway:", {"Ref": "AWS::Region"}, ":lambda:path/2015-03-31/functions/", {"Fn::GetAtt": ["deployTriggerLambda", "Arn"]}, "/invocations"]
+                    ]}
+                }
+            }
+        },    
+        "api": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+                "Name": "Deploy API"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "c9a675d5-35d3-4e98-a521-5b2491fc0e4a"
+                }
+            }
+        },
+        "apiGatewayCloudWatchLogsRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Effect": "Allow",
+                    "Principal": { "Service": ["apigateway.amazonaws.com"] },
+                    "Action": ["sts:AssumeRole"]
+                }]
+                },
+                "Policies": [{
+                "PolicyName": "ApiGatewayLogsPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                    "Effect": "Allow",
+                    "Action": [
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:DescribeLogGroups",
+                        "logs:DescribeLogStreams",
+                        "logs:PutLogEvents",
+                        "logs:GetLogEvents",
+                        "logs:FilterLogEvents"
+                    ],
+                    "Resource": "*"
+                    }]
+                }
+                }]
+            }
+        },
+        "apiGatewayAccount": {
+            "Type": "AWS::ApiGateway::Account",
+            "Properties": {
+                "CloudWatchRoleArn": {"Fn::GetAtt": ["apiGatewayCloudWatchLogsRole", "Arn"] }
+            }
+        },
+        "apiStage": {
+            "DependsOn": ["apiGatewayAccount"],
+            "Type": "AWS::ApiGateway::Stage",
+            "Properties": {
+                "DeploymentId": {"Ref": "apiDeployment"},
+                "MethodSettings": [{
+                    "DataTraceEnabled": true,
+                    "HttpMethod": "*",
+                    "LoggingLevel": "INFO",
+                    "ResourcePath": "/*"
+                }],
+                "RestApiId": {"Ref": "api"},
+                "StageName": "v1"
+            }
+        },
+        "apiDeployment": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "DependsOn": ["deployPOST"],
+            "Properties": {
+                "RestApiId": {
+                    "Ref": "api"
+                }
+            }
+        }
+    },
+    "Outputs" : {
+      "apiURL" : {
+        "Description": "The URL of the endpoint to send request to trigger deployments",  
+        "Value": {"Fn::Join": ["", ["https://", {"Ref": "api"}, ".execute-api.", {"Ref": "AWS::Region"}, ".amazonaws.com/v1"]]}
+      }
+    }
+}

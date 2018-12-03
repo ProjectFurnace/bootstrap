@@ -39,9 +39,13 @@ function runECS(msg) {
 }
 
 exports.handler = async (event) => {
-  console.log(event.Records[0].Sns.Message.url);
-  console.log(event.Records[0].Sns.Message.hash);
-  console.log(event.Records[0].Sns.Message.stage);
+  if (process.env.DEBUG) {
+    /* eslint-disable no-console */
+    console.log(event.Records[0].Sns.Message.url);
+    console.log(event.Records[0].Sns.Message.hash);
+    console.log(event.Records[0].Sns.Message.stage);
+    /* eslint-enable no-console */
+  }
 
   return runECS(event.Records[0].Sns.Message);
 };
