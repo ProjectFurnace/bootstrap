@@ -11,6 +11,11 @@
             "Default": "furnaceIgnite",
             "Description": "The name to use for the ECS Cluster."
         },
+        "FurnaceInstanceName": {
+            "Type": "String",
+            "Default": "furnace",
+            "Description": "The name of this furnace stack."
+        },
         "TaskName": {
             "Type": "String",
             "Default": "stackUpdaterTask",
@@ -31,23 +36,19 @@
             "Default": "furnace-artifact-bucket",
             "Description": "The name to use for the artifact bucket."
         },
-        "GitToken": {
+        "BootstrapCodeBucketName": {
             "Type": "String",
-            "Description": "GIT token",
-            "NoEcho": true
+            "Default": "furnace-bootstrap",
+            "Description": "The name of the bootstrap code bucket."
         },
         "GitUsername": {
             "Type": "String",
-            "Description": "GIT username"
-        },
-        "AwsKey": {
-            "Type": "String",
-            "Description": "AWS access key ID",
+            "Description": "GIT token (stringified {token: <token>}",
             "NoEcho": true
         },
-        "AwsSecret": {
+        "GitToken": {
             "Type": "String",
-            "Description": "AWS secret access key",
+            "Description": "GIT token",
             "NoEcho": true
         },
         "NpmToken": {
@@ -55,6 +56,30 @@
             "Description": "NPM Token for private repos",
             "NoEcho": true
         }
+    },
+    "Mappings" : {
+        "RegionMap" : {
+            "us-east-2"      : { "AMI" : "ami-0307f7ccf6ea35750" },
+            "us-east-1"      : { "AMI" : "ami-045f1b3f87ed83659" },
+            "us-west-2"      : { "AMI" : "ami-01b70aea4161476b7" },
+            "us-west-1"      : { "AMI" : "ami-0285183bbef6224bd" },
+            "eu-west-3"      : { "AMI" : "ami-0f4738fbeb53e6c3a" },
+            "eu-west-2"      : { "AMI" : "ami-01bee3897bba49d78" },
+            "eu-west-1"      : { "AMI" : "ami-0627e141ce928067c" },
+            "eu-central-1"   : { "AMI" : "ami-0eaa3baf6969912ba" },
+            "ap-northeast-2" : { "AMI" : "ami-00294948a592fc052" },
+            "ap-northeast-1" : { "AMI" : "ami-05b296a384694dfa4" },
+            "ap-southeast-2" : { "AMI" : "ami-02c73ee1100ce3e7a" },
+            "ap-southeast-1" : { "AMI" : "ami-050865a806e0dae53" },
+            "ca-central-1"   : { "AMI" : "ami-0f552e0a86f08b660" },
+            "ap-south-1"     : { "AMI" : "ami-01ef9f6a829ae3956" },
+            "sa-east-1"      : { "AMI" : "ami-084b1eee100c102ee" },
+            "us-gov-west-1"  : { "AMI" : "ami-1dafcb7c" }
+        }
+    },
+    "Conditions" : {
+        "GitTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "GitToken"}, ""]}] },
+        "NpmTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "NpmToken"}, ""]}] }
     },
     "Resources": {
         "furnaceIgniteSecurityGroup": {
@@ -95,8 +120,7 @@
                 "IamInstanceProfile": {
                     "Ref": "furnaceIgniteInstanceProfile"
                 },
-                "KeyName": "furnace-bastion",
-                "ImageId": "ami-0627e141ce928067c",
+                "ImageId": { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "AMI"]},
                 "Tags": [
                     {
                         "Key": "Name",
@@ -108,11 +132,13 @@
                         "Fn::Join": [
                             "",
                             [
-                                "#!/bin/bash\necho ECS_CLUSTER=",
+                                "#!/bin/bash\n",
+                                "echo ECS_CLUSTER=",
                                 {
                                     "Ref": "ClusterName"
                                 },
-                                " >> /etc/ecs/ecs.config"
+                                " >> /etc/ecs/ecs.config\n",
+                                "echo ECS_ENABLE_TASK_IAM_ROLE=true >> /etc/ecs/ecs.config"
                             ]
                         ]
                     }
@@ -349,14 +375,70 @@
                             "LogDriver": "awslogs",
                             "Options": {
                                 "awslogs-group": {"Fn::Join": ["",["/ecs/",{"Ref":"TaskName"}]]},
-                                "awslogs-region": "eu-west-1",
+                                "awslogs-region": { "Ref" : "AWS::Region" },
                                 "awslogs-stream-prefix": "ecs"
                             }
                         }
                     }
                 ],
                 "NetworkMode": "bridge",
-                "Family": {"Ref":"TaskName"}
+                "Family": {"Ref":"TaskName"},
+                "TaskRoleArn": {"Fn::GetAtt": [
+                    "updateStackTaskRole",
+                    "Arn"
+                ]}
+            }
+        },
+        "updateStackTaskRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ecs-tasks.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "updateStackTaskRolePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": [
+                                        {"Ref": "gitTokenSecret" },
+                                        {"Ref": "npmTokenSecret" }
+                                    ]
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "lambda:*",
+                                        "kinesis:*",
+                                        "iam:*"
+                                    ],
+                                    "Resource": [
+                                        {"Fn::Join": [":", ["arn:aws:lambda", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
+                                        {"Fn::Join": [":", ["arn:aws:kinesis", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
+                                        {"Fn::Join": [":", ["arn:aws:iam:", {"Ref": "AWS::AccountId"}, "*"]]}
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
             }
         },
         "updateStackTaskLogGroup": {
@@ -409,7 +491,10 @@
                                         "iam:GetRole",
                                         "iam:PassRole"
                                     ],
-                                    "Resource": "arn:aws:iam::*:role/*"
+                                    "Resource": {"Fn::GetAtt": [
+                                        "updateStackTaskRole",
+                                        "Arn"
+                                    ]}
                                 }
                             ]
                         }
@@ -428,104 +513,23 @@
                     ]
                 },
                 "Code": {
-                    "ZipFile": {
-                        "Fn::Join": [
-                            "\n",
-                            [
-                                "const aws = require('aws-sdk');",
-                                "const ecs = new aws.ECS({ apiVersion: '2014-11-13' });",
-                                "function runECS(event) {",
-                                "  const msg = JSON.parse(event);",
-                                "",
-                                "  if (process.env.DEBUG) {",
-                                "    /* eslint-disable no-console */",
-                                "    console.log(msg);",
-                                "  }",
-                                "  return new Promise((resolve, reject) => {",
-                                "    const params = {",
-                                "      taskDefinition: process.env.TASK_DEFINITION,",
-                                "      launchType: 'EC2',",
-                                "      count: 1,",
-                                "      cluster: process.env.CLUSTER,",
-                                "      overrides: {",
-                                "        containerOverrides: [{",
-                                "          name: process.env.CONTAINER_NAME,",
-                                "          environment: [{",
-                                "            name: 'GIT_REMOTE',",
-                                "            value: msg.remoteUrl,",
-                                "          },",
-                                "          {",
-                                "            name: 'GIT_TAG',",
-                                "            value: msg.commitRef,",
-                                "          },",
-                                "          {",
-                                "            name: 'STACK_ENV',",
-                                "            value: msg.environment,",
-                                "          },",
-                                "          {",
-                                "            name: 'GIT_USERNAME',",
-                                "            value: process.env.GIT_USERNAME,",
-                                "          },",
-                                "          {",
-                                "            name: 'GIT_TOKEN',",
-                                "            value: process.env.GIT_TOKEN,",
-                                "          },",
-                                "          {",
-                                "            name: 'AWS_ACCESS_KEY_ID',",
-                                "            value: process.env.AWS_KEY,",
-                                "          },",
-                                "          {",
-                                "            name: 'AWS_SECRET_ACCESS_KEY',",
-                                "            value: process.env.AWS_SECRET,",
-                                "          },",
-                                "          {",
-                                "            name: 'NPM_TOKEN',",
-                                "            value: process.env.NPM_TOKEN,",
-                                "          },",
-                                "          {",
-                                "            name: 'BUILD_BUCKET',",
-                                "            value: process.env.BUILD_BUCKET,",
-                                "          }],",
-                                "        }],",
-                                "      },",
-                                "    };",
-                                "    ecs.runTask(params, (err, data) => {",
-                                "      if (err) {",
-                                "        reject('Error while starting task:'.concat(err));",
-                                "      } else {",
-                                "        resolve('Task ECSTask started: '.concat(JSON.stringify(data.tasks)));",
-                                "      }",
-                                "    });",
-                                "  });",
-                                "}",
-                                "exports.handler = async (event) => {",
-                                "  if (process.env.DEBUG) {",
-                                "    /* eslint-disable no-console */",
-                                "    console.log(event.Records[0].Sns);",
-                                "  }",
-                                "  return runECS(event.Records[0].Sns.Message);",
-                                "};"
-                            ]
-                        ]
-                    }
+                    "S3Bucket": { "Ref": "BootstrapCodeBucketName" },
+                    "S3Key": "deployExecLambda.zip" 
                 },
                 "Description": "Lambda function to run the task to deploy Furnace",
-                "FunctionName": "deployExecLambda",
+                "FunctionName": {"Fn::Join": ["-", [{"Ref": "FurnaceInstanceName"}, "deployExecLambda"]]},
                 "Environment": {
                     "Variables": {
                         "TASK_DEFINITION": {"Ref":"TaskName"},
                         "CONTAINER_NAME": {"Ref":"TaskContainerName"},
-                        "CLUSTER": {"Ref":"ClusterName"},
-                        "GIT_TOKEN": {"Ref":"GitToken"},
                         "GIT_USERNAME": {"Ref":"GitUsername"},
+                        "CLUSTER": {"Ref":"ClusterName"},
                         "BUILD_BUCKET": {"Ref":"ArtifactBucketName"},
-                        "NPM_TOKEN": {"Ref":"NpmToken"},
-                        "AWS_KEY": {"Ref":"AwsKey"},
-                        "AWS_SECRET": {"Ref":"AwsSecret"}
+                        "FURNACE_INSTANCE": {"Ref": "FurnaceInstanceName" }
                     }
                 },
                 "Runtime": "nodejs8.10",
-                "Timeout": 300,
+                "Timeout": 30,
                 "MemorySize": 128
             }
         },
@@ -556,160 +560,25 @@
                 "BucketName": {"Ref":"ArtifactBucketName"}
             }
         },
-
-
-
         "deployTriggerLambda": {
             "DependsOn": ["FurnaceSNSTopic"],
             "Type": "AWS::Lambda::Function",
             "Properties": {
-              "Code": {
-                "ZipFile": { "Fn::Join": ["\n", [
-                    "const AWS = require('aws-sdk');",
-                    "const AWS = require('https');",
-                    "",
-                    "const sns = new AWS.SNS({ apiVersion: '2010-03-31' });",
-                    "",
-                    "function getEnvs(yaml) {",
-                    "  const pos = yaml.indexOf('environments:');",
-                    "  if (pos > 0) {",
-                    "    return yaml.substr(pos + 14).trim().replace(/-| /g, '').split(/\r?\n/);",
-                    "  }",
-                    "  return false;",
-                    "}",
-                    "",
-                    "function doRequest(options, postData) {",
-                    "  return new Promise((resolve, reject) => {",
-                    "    const buffers = [];",
-                    "    const req = https.request(options, (res) => {",
-                    "      res.on('data', (buffer) => {",
-                    "        buffers.push(buffer);",
-                    "      });",
-                    "",
-                    "      res.on('end', () => {",
-                    "        if (res.statusCode === 200 || res.statusCode === 201) {",
-                    "          resolve(Buffer.concat(buffers).toString());",
-                    "        } else {",
-                    "          reject(Buffer.concat(buffers));",
-                    "        }",
-                    "      });",
-                    "    }).on('error', (error) => {",
-                    "      reject(error);",
-                    "    });",
-                    "",  
-                    "    if (postData) {",
-                    "      req.write(postData);",
-                    "    }",
-                    "    req.end();",
-                    "  });",
-                    "}",
-                    "",
-                    "exports.handler = async (event, context, callback) => {",
-                    "  if (event.body != null) {",
-                    "    const body = JSON.parse(event.body);",
-                    "",
-                    "    if ((body.remoteUrl && body.commitRef) || body.deployment) {",
-                    "      const params = {",
-                    "        TopicArn: process.env.TOPIC,",
-                    "      };",
-                    "",
-                    "      if (body.remoteUrl && body.commitRef) {",
-                    "        params.Message = JSON.stringify({",
-                    "          remoteUrl: body.remoteUrl,",
-                    "          commitRef: body.commitRef,",
-                    "          deploymentId: body.deploymentId,",
-                    "          environment: body.environment,",
-                    "        });",
-                    "      } else {",
-                    "        params.Message = JSON.stringify({",
-                    "          remoteUrl: body.repository.clone_url,",
-                    "          commitRef: body.deployment.ref,",
-                    "          deploymentId: body.deployment.id,",
-                    "          environment: body.deployment.environment,",
-                    "        });",
-                    "      }",
-                    "",
-                    "      // Create promise and SNS service object",
-                    "      const publishTextPromise = sns.publish(params).promise();",
-                    "",
-                    "      // Handle promise's fulfilled/rejected states",
-                    "      await publishTextPromise.then((data) => {",
-                    "        if (process.env.DEBUG) {",
-                    "          // eslint-disable-next-line no-console",
-                    "          console.log(`Message ${params.Message} sent to the topic ${params.TopicArn} with ID ${data.MessageId}`);",
-                    "        }",
-                    "        callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Deployment successfully started' }) });",
-                    "      }).catch((err) => {",
-                    "        if (process.env.DEBUG) {",
-                    "          // eslint-disable-next-line no-console",
-                    "          console.error(err, err.stack);",
-                    "        }",
-                    "        callback(null, { statusCode: 500, body: JSON.stringify({ error: 'Something went wrong...' }) });",
-                    "      });",
-                    "    } else if (body.hook && body.hook.Type === 'Repository') {",
-                    "      callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Test hook received' }) });",
-                    "    } else if (body.repository) {",
-                    "      const stackYamlOptions = {",
-                    "        host: 'raw.githubusercontent.com',",
-                    "        method: 'GET',",
-                    "        // eslint-disable-next-line prefer-template",
-                    "        path: '/' + body.repository.full_name + '/' + body.repository.default_branch + '/stack.yaml',",
-                    "        headers: {",
-                    "          // eslint-disable-next-line prefer-template",
-                    "          Authorization: 'token ' + process.env.GIT_TOKEN,",
-                    "          'User-Agent': 'Project Furnace',",
-                    "        },",
-                    "      };",
-                    "",
-                    "      const stackYaml = await doRequest(stackYamlOptions);",
-                    "",
-                    "      const environments = getEnvs(stackYaml);",
-                    "",
-                    "      if (environments) {",
-                    "        const deploymentData = {",
-                    "          owner: body.repository.owner.name,",
-                    "          repo: body.repository.name,",
-                    "          ref: 'master',",
-                    "          environment: environments[0],",
-                    "        };",
-                    "",
-                    "        const postData = JSON.stringify(deploymentData);",
-                    "",
-                    "        const deploymentOptions = {",
-                    "          host: 'api.github.com',",
-                    "          method: 'POST',",
-                    "          // eslint-disable-next-line prefer-template",
-                    "          path: '/repos/' + body.repository.full_name + '/deployments',",
-                    "          headers: {",
-                    "            // eslint-disable-next-line prefer-template",
-                    "            Authorization: 'Bearer ' + process.env.GIT_TOKEN,",
-                    "            Accept: 'application/vnd.github.v3+json',",
-                    "            'Content-type': 'application/json',",
-                    "            'Content-Length': postData.length,",
-                    "            'User-Agent': 'Project Furnace',",
-                    "          },",
-                    "        };",
-                    "",
-                    "        await doRequest(deploymentOptions, postData);",
-                    "",
-                    "        callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Deployment successfully triggered' }) });",
-                    "      }",
-                    "    }",
-                    "    callback(null, { statusCode: 422, body: JSON.stringify({ error: 'Request is missing some parameter' }) });",
-                    "  }",
-                    "};",
-                    ""
-                ]]}
+                "Code": {
+                    "S3Bucket": { "Ref": "BootstrapCodeBucketName" },
+                    "S3Key": "deployTriggerLambda.zip" 
                 },
                 "Description": "Lambda function to trigger the deployment of Furnace",
-                "FunctionName": "deployTriggerLambda",
+                "FunctionName": {"Fn::Join": ["-", [{"Ref": "FurnaceInstanceName"}, "deployTriggerLambda"]]},
                 "Handler": "index.handler",
                 "Role": { "Fn::GetAtt": ["deployTriggerLambdaRole", "Arn"]},
                 "Runtime": "nodejs8.10",
+                "Timeout": 30,
+                "MemorySize": 128,
                 "Environment": {
                     "Variables": {
                         "TOPIC": { "Ref": "FurnaceSNSTopic" },
-                        "GIT_TOKEN": { "Ref": "GitToken" }
+                        "FURNACE_INSTANCE": {"Ref": "FurnaceInstanceName" }
                     }
                 }
             }
@@ -725,6 +594,21 @@
                   "Action": ["sts:AssumeRole"]
                 }]
               },
+              "Policies": [
+                {
+                    "PolicyName": "deployTriggerLambdaRolePolicy",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Action": "secretsmanager:GetSecretValue",
+                                "Resource": {"Ref": "gitTokenSecret" }
+                            }
+                        ]
+                    }
+                }
+            ],
               "Path": "/",
               "ManagedPolicyArns": [
                   "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
@@ -816,11 +700,6 @@
             "Type": "AWS::ApiGateway::RestApi",
             "Properties": {
                 "Name": "Deploy API"
-            },
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "c9a675d5-35d3-4e98-a521-5b2491fc0e4a"
-                }
             }
         },
         "apiGatewayCloudWatchLogsRole": {
@@ -914,12 +793,28 @@
               "Principal": "sns.amazonaws.com",
               "SourceArn": { "Ref": "FurnaceSNSTopic" },
               "FunctionName": {
-                "Fn::GetAtt": [ "deployExecLambda", "Arn" ]
-              }
+                  "Fn::GetAtt": [ "deployExecLambda", "Arn" ]
+                }
             }
-          }
-
-
+        },
+        "npmTokenSecret": {
+            "Type" : "AWS::SecretsManager::Secret",
+            "Condition": "NpmTokenDefined",
+            "Properties" : {
+              "Description" : "NPM Token for private repos",
+              "SecretString" : { "Ref": "NpmToken" },
+              "Name" : { "Fn::Join": ["", [{"Ref": "FurnaceInstanceName"},"/NpmToken"]] }
+            }
+        },
+        "gitTokenSecret": {
+            "Type" : "AWS::SecretsManager::Secret",
+            "Condition": "GitTokenDefined",
+            "Properties" : {
+              "Description" : "Git Token for private repos",
+              "SecretString" : { "Ref": "GitToken" },
+              "Name" : { "Fn::Join": ["", [{"Ref": "FurnaceInstanceName"},"/GitToken"]] }
+            }
+        }
     },
     "Outputs" : {
       "apiURL" : {

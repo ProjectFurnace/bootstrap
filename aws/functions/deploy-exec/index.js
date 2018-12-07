@@ -36,10 +36,6 @@ function runECS(event) {
             value: process.env.GIT_USERNAME,
           },
           {
-            name: 'GIT_TOKEN',
-            value: process.env.GIT_TOKEN,
-          },
-          {
             name: 'AWS_ACCESS_KEY_ID',
             value: process.env.AWS_KEY,
           },
@@ -48,12 +44,12 @@ function runECS(event) {
             value: process.env.AWS_SECRET,
           },
           {
-            name: 'NPM_TOKEN',
-            value: process.env.NPM_TOKEN,
-          },
-          {
             name: 'DEPLOYMENT_ID',
             value: msg.deploymentId.toString(),
+          },
+          {
+            name: 'FURNACE_INSTANCE',
+            value: process.env.FURNACE_INSTANCE,
           },
           {
             name: 'BUILD_BUCKET',

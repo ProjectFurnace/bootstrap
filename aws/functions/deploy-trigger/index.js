@@ -2,6 +2,7 @@ const AWS = require('aws-sdk');
 const https = require('https');
 
 const sns = new AWS.SNS({ apiVersion: '2010-03-31' });
+const sm = new AWS.SecretsManager({ apiVersion: '2017-10-17' });
 
 function getEnvs(yaml) {
   const pos = yaml.indexOf('environments:');
@@ -35,6 +36,14 @@ function doRequest(options, postData) {
     }
     req.end();
   });
+}
+
+function getSM(name) {
+  const params = {
+    SecretId: name,
+  };
+
+  return sm.getSecretValue(params).promise();
 }
 
 exports.handler = async (event, context, callback) => {
@@ -76,11 +85,19 @@ exports.handler = async (event, context, callback) => {
         host: 'raw.githubusercontent.com',
         method: 'GET',
         headers: {
-          // eslint-disable-next-line prefer-template
-          Authorization: 'token ' + process.env.GIT_TOKEN,
           'User-Agent': 'Project Furnace',
         },
       };
+
+      try {
+        const gitToken = await getSM(process.env.FURNACE_STACK.concat('Git'));
+        stackYamlOptions.Authorization = 'token '.concat(gitToken);
+      } catch (e) {
+        if (process.env.DEBUG) {
+          // eslint-disable-next-line no-console
+          console.log('No GIT token in Secrets Manager');
+        }
+      }
 
       let owner = '';
       let repo = '';
@@ -124,14 +141,22 @@ exports.handler = async (event, context, callback) => {
           host: 'api.github.com',
           method: 'POST',
           headers: {
-            // eslint-disable-next-line prefer-template
-            Authorization: 'Bearer ' + process.env.GIT_TOKEN,
             Accept: 'application/vnd.github.v3+json',
             'Content-type': 'application/json',
             'Content-Length': postData.length,
             'User-Agent': 'Project Furnace',
           },
         };
+
+        try {
+          const gitToken = await getSM(process.env.FURNACE_STACK.concat('Git'));
+          deploymentOptions.Authorization = 'Bearer '.concat(gitToken);
+        } catch (e) {
+          if (process.env.DEBUG) {
+            // eslint-disable-next-line no-console
+            console.log('No GIT token in Secrets Manager');
+          }
+        }
 
         if (body.repository) {
           // eslint-disable-next-line prefer-template
