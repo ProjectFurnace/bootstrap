@@ -554,12 +554,6 @@
                 "TopicName": "FurnaceStackUpdates"
             }
         },
-        "ArtifactBucket": {
-            "Type": "AWS::S3::Bucket",
-            "Properties": {
-                "BucketName": {"Ref":"ArtifactBucketName"}
-            }
-        },
         "deployTriggerLambda": {
             "DependsOn": ["FurnaceSNSTopic"],
             "Type": "AWS::Lambda::Function",
