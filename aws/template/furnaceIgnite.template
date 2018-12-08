@@ -514,7 +514,7 @@
                 },
                 "Code": {
                     "S3Bucket": { "Ref": "BootstrapCodeBucketName" },
-                    "S3Key": "deployExecLambda.zip" 
+                    "S3Key": "deploy-exec" 
                 },
                 "Description": "Lambda function to run the task to deploy Furnace",
                 "FunctionName": {"Fn::Join": ["-", [{"Ref": "FurnaceInstanceName"}, "deployExecLambda"]]},
@@ -566,7 +566,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": { "Ref": "BootstrapCodeBucketName" },
-                    "S3Key": "deployTriggerLambda.zip" 
+                    "S3Key": "deploy-trigger" 
                 },
                 "Description": "Lambda function to trigger the deployment of Furnace",
                 "FunctionName": {"Fn::Join": ["-", [{"Ref": "FurnaceInstanceName"}, "deployTriggerLambda"]]},
