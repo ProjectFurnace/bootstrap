@@ -419,11 +419,13 @@
                                         "lambda:*",
                                         "kinesis:*",
                                         "iam:*",
-                                        "s3:*"
+                                        "s3:*",
+                                        "sts:*"
                                     ],
                                     "Resource": [
                                         {"Fn::Join": [":", ["arn:aws:lambda", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
                                         {"Fn::Join": [":", ["arn:aws:kinesis", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
+                                        {"Fn::Join": [":", ["arn:aws:sts:", {"Ref": "AWS::AccountId"}, "*"]]},
                                         {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"ArtifactBucket"},"/*"]]}]]},
                                         {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"LogsBucket"},"/*"]]}]]},
                                         {"Fn::Join": [":", ["arn:aws:iam:", {"Ref": "AWS::AccountId"}, "*"]]}
