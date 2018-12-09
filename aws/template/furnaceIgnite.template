@@ -101,7 +101,7 @@
             "Type": "AWS::ECS::Cluster",
             "Properties": {
                 "ClusterName": {
-                    "Ref": "ClusterName"
+                    "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]]
                 }
             }
         },
@@ -365,7 +365,7 @@
                         "LogConfiguration": {
                             "LogDriver": "awslogs",
                             "Options": {
-                                "awslogs-group": {"Fn::Join": ["",["/ecs/",{"Ref":"TaskName"}]]},
+                                "awslogs-group": {"Fn::Join": ["",["/ecs/",{ "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] }]]},
                                 "awslogs-region": { "Ref" : "AWS::Region" },
                                 "awslogs-stream-prefix": "ecs"
                             }
@@ -373,7 +373,7 @@
                     }
                 ],
                 "NetworkMode": "bridge",
-                "Family": {"Ref":"TaskName"},
+                "Family": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] },
                 "TaskRoleArn": {"Fn::GetAtt": [
                     "updateStackTaskRole",
                     "Arn"
