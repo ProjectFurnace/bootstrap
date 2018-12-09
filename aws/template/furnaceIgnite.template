@@ -115,7 +115,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "furnaceIgnite"
+                        "Value": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnite"]]}
                     }
                 ],
                 "UserData": {
@@ -546,7 +546,7 @@
         "FurnaceSNSTopic": {
             "Type": "AWS::SNS::Topic",
             "Properties": {
-                "TopicName": "FurnaceStackUpdates"
+                "TopicName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "FurnaceStackUpdates"]]}
             }
         },
         "deployTriggerLambda": {
