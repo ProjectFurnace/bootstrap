@@ -440,7 +440,7 @@
         "updateStackTaskLogGroup": {
             "Type": "AWS::Logs::LogGroup",
             "Properties": {
-                "LogGroupName": {"Fn::Join": ["",["/ecs/",{"Ref":"TaskName"}]]}
+                "LogGroupName": {"Fn::Join": ["",["/ecs/",{ "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] }]]}
             }
         },
         "deployExecLambdaRole": {
@@ -516,7 +516,7 @@
                 "FunctionName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "deployExec"]]},
                 "Environment": {
                     "Variables": {
-                        "TASK_DEFINITION": {"Ref":"TaskName"},
+                        "TASK_DEFINITION": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] },
                         "CONTAINER_NAME": {"Ref":"TaskContainerName"},
                         "GIT_USERNAME": {"Ref":"GitUsername"},
                         "CLUSTER": {"Ref":"ClusterName"},
