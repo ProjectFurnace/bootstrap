@@ -47,6 +47,10 @@ function getSM(name) {
 }
 
 exports.handler = async (event, context, callback) => {
+  if (process.env.DEBUG) {
+    // eslint-disable-next-line no-console
+    console.log(event);
+  }
   if (event.body != null) {
     const body = JSON.parse(event.body);
 
@@ -81,37 +85,49 @@ exports.handler = async (event, context, callback) => {
     } else if (body.hook && body.hook.Type === 'Repository') {
       callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Test hook received' }) });
     } else if (body.repository || (body.remoteUrl && body.commitRef && body.environment)) {
+      let owner = '';
+      let repo = '';
+      let branch = '';
+      let gitToken = '';
+
+      // depending on if this is direct from CLI or from hook, we need to do different parsing
+      if (body.repository) {
+        owner = body.repository.owner.login;
+        repo = body.repository.name;
+        branch = body.repository.default_branch;
+      } else {
+        const parts = body.remoteUrl.split('/');
+
+        [,,, owner, repo] = parts;
+        branch = body.commitRef;
+      }
+
       const stackYamlOptions = {
         host: 'raw.githubusercontent.com',
+        // eslint-disable-next-line prefer-template
+        path: '/' + owner + '/' + repo + '/' + branch + '/stack.yaml',
         method: 'GET',
         headers: {
           'User-Agent': 'Project Furnace',
         },
       };
 
+
       try {
-        const gitToken = await getSM(process.env.FURNACE_STACK.concat('Git'));
-        stackYamlOptions.Authorization = 'token '.concat(gitToken);
+        gitToken = await getSM(process.env.FURNACE_INSTANCE.concat('/GitToken'));
+        if (gitToken.SecretString) {
+          stackYamlOptions.headers.Authorization = 'token '.concat(gitToken.SecretString);
+        }
       } catch (e) {
         if (process.env.DEBUG) {
           // eslint-disable-next-line no-console
-          console.log('No GIT token in Secrets Manager');
+          console.log('Error fetching GIT token from Secrets Manager', e);
         }
       }
 
-      let owner = '';
-      let repo = '';
-
-      if (body.repository) {
-        // eslint-disable-next-line prefer-template
-        stackYamlOptions.path = '/' + body.repository.full_name + '/' + body.repository.default_branch + '/stack.yaml';
-      } else {
-        const parts = body.remoteUrl.split('/');
-
-        owner = parts[3];
-        repo = parts[4];
-        // eslint-disable-next-line prefer-template
-        stackYamlOptions.path = '/' + owner + '/' + repo + '/' + body.commitRef + '/stack.yaml';
+      if (process.env.DEBUG) {
+        // eslint-disable-next-line no-console
+        console.log(stackYamlOptions);
       }
 
       const stackYaml = await doRequest(stackYamlOptions);
@@ -119,26 +135,16 @@ exports.handler = async (event, context, callback) => {
       const environments = getEnvs(stackYaml);
 
       if (environments) {
-        const deploymentData = {
-          ref: 'master',
-        };
+        const deploymentData = { owner, repo, ref: 'master' };
 
-        if (body.repository) {
-          // eslint-disable-next-line prefer-template
-          deploymentData.owner = body.repository.owner.name;
-          deploymentData.repo = body.repository.name;
-          deploymentData.environment = environments[0];
-        } else {
-          // eslint-disable-next-line prefer-template
-          deploymentData.owner = owner;
-          deploymentData.repo = repo;
-          deploymentData.environment = body.environment;
-        }
+        deploymentData.environment = (body.repository ? environments[0] : body.environment);
 
         const postData = JSON.stringify(deploymentData);
 
         const deploymentOptions = {
           host: 'api.github.com',
+          // eslint-disable-next-line prefer-template
+          path: '/repos/' + owner + '/' + repo + '/deployments',
           method: 'POST',
           headers: {
             Accept: 'application/vnd.github.v3+json',
@@ -148,22 +154,8 @@ exports.handler = async (event, context, callback) => {
           },
         };
 
-        try {
-          const gitToken = await getSM(process.env.FURNACE_STACK.concat('Git'));
-          deploymentOptions.Authorization = 'Bearer '.concat(gitToken);
-        } catch (e) {
-          if (process.env.DEBUG) {
-            // eslint-disable-next-line no-console
-            console.log('No GIT token in Secrets Manager');
-          }
-        }
-
-        if (body.repository) {
-          // eslint-disable-next-line prefer-template
-          deploymentOptions.path = '/repos/' + body.repository.full_name + '/deployments';
-        } else {
-          // eslint-disable-next-line prefer-template
-          deploymentOptions.path = '/repos/' + owner + '/' + repo + '/deployments';
+        if (gitToken.SecretString) {
+          deploymentOptions.headers.Authorization = 'Bearer '.concat(gitToken.SecretString);
         }
 
         await doRequest(deploymentOptions, postData);

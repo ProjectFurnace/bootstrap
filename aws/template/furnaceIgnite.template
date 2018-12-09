@@ -11,11 +11,6 @@
             "Default": "furnaceIgnite",
             "Description": "The name to use for the ECS Cluster."
         },
-        "FurnaceInstanceName": {
-            "Type": "String",
-            "Default": "furnace",
-            "Description": "The name of this furnace stack."
-        },
         "TaskName": {
             "Type": "String",
             "Default": "stackUpdaterTask",
@@ -30,11 +25,6 @@
             "Type": "String",
             "Default": "stackUpdater",
             "Description": "The container name for the Stack Updater Task"
-        },
-        "ArtifactBucketName": {
-            "Type": "String",
-            "Default": "furnace-artifact-bucket",
-            "Description": "The name to use for the artifact bucket."
         },
         "BootstrapCodeBucketName": {
             "Type": "String",
@@ -79,7 +69,8 @@
     },
     "Conditions" : {
         "GitTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "GitToken"}, ""]}] },
-        "NpmTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "NpmToken"}, ""]}] }
+        "NpmTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "NpmToken"}, ""]}] },
+        "NpmOrGitDefined" : {"Fn::Or": [ {"Condition": "GitTokenDefined"}, {"Condition": "NpmTokenDefined"} ] }
     },
     "Resources": {
         "furnaceIgniteSecurityGroup": {
@@ -413,25 +404,28 @@
                         "PolicyName": "updateStackTaskRolePolicy",
                         "PolicyDocument": {
                             "Version": "2012-10-17",
-                            "Statement": [
-                                {
+                            "Statement": [{ "Fn::If": [ "NpmOrGitDefined",
+                                { 
                                     "Effect": "Allow",
                                     "Action": "secretsmanager:GetSecretValue",
                                     "Resource": [
-                                        {"Ref": "gitTokenSecret" },
-                                        {"Ref": "npmTokenSecret" }
+                                        { "Fn::If": [ "GitTokenDefined", {"Ref": "gitTokenSecret" }, {"Ref" : "AWS::NoValue"}] },
+                                        { "Fn::If": [ "NpmTokenDefined", {"Ref": "npmTokenSecret" }, {"Ref" : "AWS::NoValue"} ] }
                                     ]
-                                },
+                                }, {"Ref" : "AWS::NoValue"}]},
                                 {
                                     "Effect": "Allow",
                                     "Action": [
                                         "lambda:*",
                                         "kinesis:*",
-                                        "iam:*"
+                                        "iam:*",
+                                        "s3:*"
                                     ],
                                     "Resource": [
                                         {"Fn::Join": [":", ["arn:aws:lambda", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
                                         {"Fn::Join": [":", ["arn:aws:kinesis", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
+                                        {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"ArtifactBucket"},"/*"]]}]]},
+                                        {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"LogsBucket"},"/*"]]}]]},
                                         {"Fn::Join": [":", ["arn:aws:iam:", {"Ref": "AWS::AccountId"}, "*"]]}
                                     ]
                                 }
@@ -517,15 +511,16 @@
                     "S3Key": "deploy-exec" 
                 },
                 "Description": "Lambda function to run the task to deploy Furnace",
-                "FunctionName": {"Fn::Join": ["-", [{"Ref": "FurnaceInstanceName"}, "deployExecLambda"]]},
+                "FunctionName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "deployExec"]]},
                 "Environment": {
                     "Variables": {
                         "TASK_DEFINITION": {"Ref":"TaskName"},
                         "CONTAINER_NAME": {"Ref":"TaskContainerName"},
                         "GIT_USERNAME": {"Ref":"GitUsername"},
                         "CLUSTER": {"Ref":"ClusterName"},
-                        "BUILD_BUCKET": {"Ref":"ArtifactBucketName"},
-                        "FURNACE_INSTANCE": {"Ref": "FurnaceInstanceName" }
+                        "BUILD_BUCKET": {"Ref":"ArtifactBucket"},
+                        "PLATFORM": "aws",
+                        "FURNACE_INSTANCE": { "Ref" : "AWS::StackName" }
                     }
                 },
                 "Runtime": "nodejs8.10",
@@ -563,7 +558,7 @@
                     "S3Key": "deploy-trigger" 
                 },
                 "Description": "Lambda function to trigger the deployment of Furnace",
-                "FunctionName": {"Fn::Join": ["-", [{"Ref": "FurnaceInstanceName"}, "deployTriggerLambda"]]},
+                "FunctionName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "deployTrigger"]]},
                 "Handler": "index.handler",
                 "Role": { "Fn::GetAtt": ["deployTriggerLambdaRole", "Arn"]},
                 "Runtime": "nodejs8.10",
@@ -572,12 +567,23 @@
                 "Environment": {
                     "Variables": {
                         "TOPIC": { "Ref": "FurnaceSNSTopic" },
-                        "FURNACE_INSTANCE": {"Ref": "FurnaceInstanceName" }
+                        "FURNACE_INSTANCE": { "Ref" : "AWS::StackName" }
                     }
                 }
             }
           },
-          
+          "ArtifactBucket": {	
+            "Type": "AWS::S3::Bucket",	
+            "Properties": {	
+                "BucketName": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "AWS::Region" }, "artifact", "bucket" ] ] }
+            }	
+          },
+          "LogsBucket": {	
+            "Type": "AWS::S3::Bucket",	
+            "Properties": {	
+                "BucketName": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "AWS::Region" }, "logs", "bucket" ] ] }
+            }	
+          },
           "deployTriggerLambdaRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
@@ -588,7 +594,7 @@
                   "Action": ["sts:AssumeRole"]
                 }]
               },
-              "Policies": [
+              "Policies" : [{ "Fn::If": [ "GitTokenDefined", 
                 {
                     "PolicyName": "deployTriggerLambdaRolePolicy",
                     "PolicyDocument": {
@@ -601,8 +607,8 @@
                             }
                         ]
                     }
-                }
-            ],
+                }, {"Ref" : "AWS::NoValue"} ]
+            }],
               "Path": "/",
               "ManagedPolicyArns": [
                   "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
@@ -797,7 +803,7 @@
             "Properties" : {
               "Description" : "NPM Token for private repos",
               "SecretString" : { "Ref": "NpmToken" },
-              "Name" : { "Fn::Join": ["", [{"Ref": "FurnaceInstanceName"},"/NpmToken"]] }
+              "Name" : { "Fn::Join": ["", [{ "Ref" : "AWS::StackName" },"/NpmToken"]] }
             }
         },
         "gitTokenSecret": {
@@ -806,7 +812,7 @@
             "Properties" : {
               "Description" : "Git Token for private repos",
               "SecretString" : { "Ref": "GitToken" },
-              "Name" : { "Fn::Join": ["", [{"Ref": "FurnaceInstanceName"},"/GitToken"]] }
+              "Name" : { "Fn::Join": ["", [{ "Ref" : "AWS::StackName" },"/GitToken"]] }
             }
         }
     },

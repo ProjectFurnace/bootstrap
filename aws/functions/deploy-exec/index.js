@@ -36,12 +36,8 @@ function runECS(event) {
             value: process.env.GIT_USERNAME,
           },
           {
-            name: 'AWS_ACCESS_KEY_ID',
-            value: process.env.AWS_KEY,
-          },
-          {
-            name: 'AWS_SECRET_ACCESS_KEY',
-            value: process.env.AWS_SECRET,
+            name: 'PLATFORM',
+            value: process.env.PLATFORM,
           },
           {
             name: 'DEPLOYMENT_ID',
