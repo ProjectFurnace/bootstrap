@@ -537,7 +537,7 @@
                     "Variables": {
                         "TASK_DEFINITION": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] },
                         "CONTAINER_NAME": {"Ref":"TaskContainerName"},
-                        "GIT_USERNAME": { "Fn::If": [ "GitUsernameDefined", {"Ref": "gitUsername" }, {"Ref" : "AWS::NoValue"}] },
+                        "GIT_USERNAME": { "Fn::If": [ "GitUsernameDefined", {"Ref": "GitUsername" }, {"Ref" : "AWS::NoValue"}] },
                         "CLUSTER": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]] },
                         "BUILD_BUCKET": {"Ref":"ArtifactBucket"},
                         "PLATFORM": "aws",
