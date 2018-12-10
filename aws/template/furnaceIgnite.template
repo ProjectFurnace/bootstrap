@@ -125,9 +125,7 @@
                             [
                                 "#!/bin/bash\n",
                                 "echo ECS_CLUSTER=",
-                                {
-                                    "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]]
-                                },
+                                { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]] },
                                 " >> /etc/ecs/ecs.config\n",
                                 "echo ECS_ENABLE_TASK_IAM_ROLE=true >> /etc/ecs/ecs.config"
                             ]
