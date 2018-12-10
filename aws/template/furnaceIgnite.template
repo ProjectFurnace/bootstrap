@@ -79,8 +79,8 @@
                 "VpcId": {
                     "Ref": "VPC"
                 },
-                "GroupDescription": "furnaceIgniteSG",
-                "GroupName": "furnaceIgniteSG",
+                "GroupDescription": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteSG"]]},
+                "GroupName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteSG"]]},
                 "SecurityGroupIngress": [
                     {
                         "IpProtocol": "tcp",
@@ -115,7 +115,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnite"]]}
+                        "Value": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" },  { "Ref" : "ClusterName" }]]}
                     }
                 ],
                 "UserData": {
@@ -126,7 +126,7 @@
                                 "#!/bin/bash\n",
                                 "echo ECS_CLUSTER=",
                                 {
-                                    "Ref": "ClusterName"
+                                    "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]]
                                 },
                                 " >> /etc/ecs/ecs.config\n",
                                 "echo ECS_ENABLE_TASK_IAM_ROLE=true >> /etc/ecs/ecs.config"
@@ -191,7 +191,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "furnaceIgniteVPC"
+                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteVPC"]] }
                     }
                 ]
             }
@@ -206,7 +206,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "furnaceIgnitePrivateSubnet"
+                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnitePrivateSubnet"]] }
                     }
                 ]
             }
@@ -221,7 +221,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "furnaceIgnitePublicSubnet"
+                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnitePublicSubnet"]] }
                     }
                 ],
                 "MapPublicIpOnLaunch": true
@@ -258,7 +258,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "furnageIgnitePrivateRT"
+                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnitePrivateRT"]] }
                     }
                 ]
             }
@@ -272,7 +272,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "furnageIgnitePublicRT"
+                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnitePublicRT"]] }
                     }
                 ]
             }
@@ -283,7 +283,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "furnaceIgniteInternetGateway"
+                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteInternetGateway"]] }
                     }
                 ]
             }
@@ -317,7 +317,7 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "furnaceIgniteNATGw"
+                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteNATGw"]] }
                     }
                 ]
             }
@@ -419,17 +419,25 @@
                                         "lambda:*",
                                         "kinesis:*",
                                         "iam:*",
-                                        "s3:*",
-                                        "sts:*"
+                                        "s3:*"
                                     ],
                                     "Resource": [
                                         {"Fn::Join": [":", ["arn:aws:lambda", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
                                         {"Fn::Join": [":", ["arn:aws:kinesis", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
-                                        {"Fn::Join": [":", ["arn:aws:sts:", {"Ref": "AWS::AccountId"}, "*"]]},
                                         {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"ArtifactBucket"},"/*"]]}]]},
                                         {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"LogsBucket"},"/*"]]}]]},
                                         {"Fn::Join": [":", ["arn:aws:iam:", {"Ref": "AWS::AccountId"}, "*"]]}
                                     ]
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "lambda:CreateEventSourceMapping",
+                                        "lambda:DeleteEventSourceMapping",
+                                        "lambda:UpdateEventSourceMapping",
+                                        "lambda:GetEventSourceMapping"
+                                    ],
+                                    "Resource": "*"
                                 }
                             ]
                         }
@@ -701,7 +709,7 @@
         "api": {
             "Type": "AWS::ApiGateway::RestApi",
             "Properties": {
-                "Name": "Deploy API"
+                "Name": { "Fn::Join": ["", ["Deploy API (", { "Ref" : "AWS::StackName" }, ")"]] }
             }
         },
         "apiGatewayCloudWatchLogsRole": {
