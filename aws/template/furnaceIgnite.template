@@ -525,7 +525,7 @@
                         "TASK_DEFINITION": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] },
                         "CONTAINER_NAME": {"Ref":"TaskContainerName"},
                         "GIT_USERNAME": {"Ref":"GitUsername"},
-                        "CLUSTER": {"Ref":"ClusterName"},
+                        "CLUSTER": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]] },
                         "BUILD_BUCKET": {"Ref":"ArtifactBucket"},
                         "PLATFORM": "aws",
                         "FURNACE_INSTANCE": { "Ref" : "AWS::StackName" }
