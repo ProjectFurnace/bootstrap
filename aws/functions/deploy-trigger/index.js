@@ -82,7 +82,7 @@ exports.handler = async (event, context, callback) => {
         }
         callback(null, { statusCode: 500, body: JSON.stringify({ error: 'Something went wrong...' }) });
       });
-    } else if (body.hook && body.hook.Type === 'Repository') {
+    } else if (body.hook && body.hook.type === 'Repository') {
       callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Test hook received' }) });
     } else if (body.repository || (body.remoteUrl && body.commitRef && body.environment)) {
       let owner = '';
