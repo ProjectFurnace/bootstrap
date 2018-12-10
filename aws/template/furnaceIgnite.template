@@ -28,22 +28,34 @@
         },
         "BootstrapCodeBucketName": {
             "Type": "String",
-            "Default": "furnace-bootstrap",
             "Description": "The name of the bootstrap code bucket."
+        },
+        "ArtifactBucketName": {
+            "Type": "String",
+            "Description": "The name of the artifact bucket."
         },
         "GitUsername": {
             "Type": "String",
             "Description": "GIT token (stringified {token: <token>}",
+            "Default": "",
             "NoEcho": true
         },
         "GitToken": {
             "Type": "String",
             "Description": "GIT token",
+            "Default": "",
+            "NoEcho": true
+        },
+        "GitHookSecret": {
+            "Type": "String",
+            "Description": "NPM Token for private repos",
+            "Default": "",
             "NoEcho": true
         },
         "NpmToken": {
             "Type": "String",
             "Description": "NPM Token for private repos",
+            "Default": "",
             "NoEcho": true
         }
     },
@@ -69,6 +81,8 @@
     },
     "Conditions" : {
         "GitTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "GitToken"}, ""]}] },
+        "GitUsernameDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "GitUsername"}, ""]}] },
+        "GitHookSecretDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "GitHookSecret"}, ""]}] },
         "NpmTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "NpmToken"}, ""]}] },
         "NpmOrGitDefined" : {"Fn::Or": [ {"Condition": "GitTokenDefined"}, {"Condition": "NpmTokenDefined"} ] }
     },
@@ -423,7 +437,6 @@
                                         {"Fn::Join": [":", ["arn:aws:lambda", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
                                         {"Fn::Join": [":", ["arn:aws:kinesis", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
                                         {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"ArtifactBucket"},"/*"]]}]]},
-                                        {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"LogsBucket"},"/*"]]}]]},
                                         {"Fn::Join": [":", ["arn:aws:iam:", {"Ref": "AWS::AccountId"}, "*"]]}
                                     ]
                                 },
@@ -524,7 +537,7 @@
                     "Variables": {
                         "TASK_DEFINITION": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] },
                         "CONTAINER_NAME": {"Ref":"TaskContainerName"},
-                        "GIT_USERNAME": {"Ref":"GitUsername"},
+                        "GIT_USERNAME": { "Fn::If": [ "GitUsernameDefined", {"Ref": "gitUsername" }, {"Ref" : "AWS::NoValue"}] },
                         "CLUSTER": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]] },
                         "BUILD_BUCKET": {"Ref":"ArtifactBucket"},
                         "PLATFORM": "aws",
@@ -583,13 +596,7 @@
           "ArtifactBucket": {	
             "Type": "AWS::S3::Bucket",	
             "Properties": {	
-                "BucketName": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "AWS::Region" }, "artifact", "bucket" ] ] }
-            }	
-          },
-          "LogsBucket": {	
-            "Type": "AWS::S3::Bucket",	
-            "Properties": {	
-                "BucketName": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "AWS::Region" }, "logs", "bucket" ] ] }
+                "BucketName": { "Ref": "ArtifactBucketName" }
             }	
           },
           "deployTriggerLambdaRole": {
@@ -821,6 +828,15 @@
               "Description" : "Git Token for private repos",
               "SecretString" : { "Ref": "GitToken" },
               "Name" : { "Fn::Join": ["", [{ "Ref" : "AWS::StackName" },"/GitToken"]] }
+            }
+        },
+        "gitHookSecretSecret": {
+            "Type" : "AWS::SecretsManager::Secret",
+            "Condition": "GitHookSecretDefined",
+            "Properties" : {
+              "Description" : "Git secret for Hooks",
+              "SecretString" : { "Ref": "GitHookSecret" },
+              "Name" : { "Fn::Join": ["", [{ "Ref" : "AWS::StackName" },"/GitHookSecret"]] }
             }
         }
     },
