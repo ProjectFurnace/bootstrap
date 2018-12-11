@@ -44,7 +44,7 @@ function getSM(name) {
 
 // Verification function to check if it is actually GitHub who is POSTing here
 async function verifyGitSecret(headers, stringBody) {
-  if (headers['x-hub-signature']) {
+  if (headers['X-Hub-Signature']) {
     // Get secret from secret store
     const gitSecret = await getSM(process.env.FURNACE_INSTANCE.concat('/GitHookSecret'));
     if (gitSecret.SecretString) {
