@@ -69,6 +69,7 @@ exports.handler = async (event, context, callback) => {
       // first let's validate the github signature
       if (!verifyGitSecret(event.headers, event.body)) {
         callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+        return;
       }
 
       const params = {
@@ -105,6 +106,7 @@ exports.handler = async (event, context, callback) => {
       } else {
         callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
       }
+      return;
     } else if (body.repository || (body.remoteUrl && body.commitRef && body.environment)) {
       let owner = '';
       let repo = '';
@@ -117,6 +119,7 @@ exports.handler = async (event, context, callback) => {
         // first let's validate the github signature
         if (!verifyGitSecret(event.headers, event.body)) {
           callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+          return;
         }
         owner = body.repository.owner.login;
         repo = body.repository.name;
