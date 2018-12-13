@@ -57,34 +57,109 @@
             "Description": "NPM Token for private repos",
             "Default": "",
             "NoEcho": true
+        },
+        "ApiKey": {
+            "Type": "String",
+            "Description": "API Key for CLI auth",
+            "Default": "",
+            "NoEcho": true
         }
     },
-    "Mappings" : {
-        "RegionMap" : {
-            "us-east-2"      : { "AMI" : "ami-0307f7ccf6ea35750" },
-            "us-east-1"      : { "AMI" : "ami-045f1b3f87ed83659" },
-            "us-west-2"      : { "AMI" : "ami-01b70aea4161476b7" },
-            "us-west-1"      : { "AMI" : "ami-0285183bbef6224bd" },
-            "eu-west-3"      : { "AMI" : "ami-0f4738fbeb53e6c3a" },
-            "eu-west-2"      : { "AMI" : "ami-01bee3897bba49d78" },
-            "eu-west-1"      : { "AMI" : "ami-0627e141ce928067c" },
-            "eu-central-1"   : { "AMI" : "ami-0eaa3baf6969912ba" },
-            "ap-northeast-2" : { "AMI" : "ami-00294948a592fc052" },
-            "ap-northeast-1" : { "AMI" : "ami-05b296a384694dfa4" },
-            "ap-southeast-2" : { "AMI" : "ami-02c73ee1100ce3e7a" },
-            "ap-southeast-1" : { "AMI" : "ami-050865a806e0dae53" },
-            "ca-central-1"   : { "AMI" : "ami-0f552e0a86f08b660" },
-            "ap-south-1"     : { "AMI" : "ami-01ef9f6a829ae3956" },
-            "sa-east-1"      : { "AMI" : "ami-084b1eee100c102ee" },
-            "us-gov-west-1"  : { "AMI" : "ami-1dafcb7c" }
+    "Mappings": {
+        "RegionMap": {
+            "us-east-2": {
+                "AMI": "ami-0307f7ccf6ea35750"
+            },
+            "us-east-1": {
+                "AMI": "ami-045f1b3f87ed83659"
+            },
+            "us-west-2": {
+                "AMI": "ami-01b70aea4161476b7"
+            },
+            "us-west-1": {
+                "AMI": "ami-0285183bbef6224bd"
+            },
+            "eu-west-3": {
+                "AMI": "ami-0f4738fbeb53e6c3a"
+            },
+            "eu-west-2": {
+                "AMI": "ami-01bee3897bba49d78"
+            },
+            "eu-west-1": {
+                "AMI": "ami-0627e141ce928067c"
+            },
+            "eu-central-1": {
+                "AMI": "ami-0eaa3baf6969912ba"
+            },
+            "ap-northeast-2": {
+                "AMI": "ami-00294948a592fc052"
+            },
+            "ap-northeast-1": {
+                "AMI": "ami-05b296a384694dfa4"
+            },
+            "ap-southeast-2": {
+                "AMI": "ami-02c73ee1100ce3e7a"
+            },
+            "ap-southeast-1": {
+                "AMI": "ami-050865a806e0dae53"
+            },
+            "ca-central-1": {
+                "AMI": "ami-0f552e0a86f08b660"
+            },
+            "ap-south-1": {
+                "AMI": "ami-01ef9f6a829ae3956"
+            },
+            "sa-east-1": {
+                "AMI": "ami-084b1eee100c102ee"
+            },
+            "us-gov-west-1": {
+                "AMI": "ami-1dafcb7c"
+            }
         }
     },
-    "Conditions" : {
-        "GitTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "GitToken"}, ""]}] },
-        "GitUsernameDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "GitUsername"}, ""]}] },
-        "GitHookSecretDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "GitHookSecret"}, ""]}] },
-        "NpmTokenDefined" : {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "NpmToken"}, ""]}] },
-        "NpmOrGitDefined" : {"Fn::Or": [ {"Condition": "GitTokenDefined"}, {"Condition": "NpmTokenDefined"} ] }
+    "Conditions": {
+        "GitTokenDefined": {
+            "Fn::Not": [{
+                "Fn::Equals": [{
+                    "Ref": "GitToken"
+                }, ""]
+            }]
+        },
+        "GitUsernameDefined": {
+            "Fn::Not": [{
+                "Fn::Equals": [{
+                    "Ref": "GitUsername"
+                }, ""]
+            }]
+        },
+        "GitHookSecretDefined": {
+            "Fn::Not": [{
+                "Fn::Equals": [{
+                    "Ref": "GitHookSecret"
+                }, ""]
+            }]
+        },
+        "NpmTokenDefined": {
+            "Fn::Not": [{
+                "Fn::Equals": [{
+                    "Ref": "NpmToken"
+                }, ""]
+            }]
+        },
+        "NpmOrGitDefined": {
+            "Fn::Or": [{
+                "Condition": "GitTokenDefined"
+            }, {
+                "Condition": "NpmTokenDefined"
+            }]
+        },
+        "ApiKeyDefined": {
+            "Fn::Not": [{
+                "Fn::Equals": [{
+                    "Ref": "ApiKey"
+                }, ""]
+            }]
+        }
     },
     "Resources": {
         "furnaceIgniteSecurityGroup": {
@@ -93,10 +168,17 @@
                 "VpcId": {
                     "Ref": "VPC"
                 },
-                "GroupDescription": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteSG"]]},
-                "GroupName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteSG"]]},
-                "SecurityGroupIngress": [
-                    {
+                "GroupDescription": {
+                    "Fn::Join": ["-", [{
+                        "Ref": "AWS::StackName"
+                    }, "furnaceIgniteSG"]]
+                },
+                "GroupName": {
+                    "Fn::Join": ["-", [{
+                        "Ref": "AWS::StackName"
+                    }, "furnaceIgniteSG"]]
+                },
+                "SecurityGroupIngress": [{
                         "IpProtocol": "tcp",
                         "FromPort": "0",
                         "ToPort": "65535",
@@ -115,7 +197,11 @@
             "Type": "AWS::ECS::Cluster",
             "Properties": {
                 "ClusterName": {
-                    "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]]
+                    "Fn::Join": ["-", [{
+                        "Ref": "AWS::StackName"
+                    }, {
+                        "Ref": "ClusterName"
+                    }]]
                 }
             }
         },
@@ -125,13 +211,21 @@
                 "IamInstanceProfile": {
                     "Ref": "furnaceIgniteInstanceProfile"
                 },
-                "ImageId": { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "AMI"]},
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" },  { "Ref" : "ClusterName" }]]}
+                "ImageId": {
+                    "Fn::FindInMap": ["RegionMap", {
+                        "Ref": "AWS::Region"
+                    }, "AMI"]
+                },
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, {
+                            "Ref": "ClusterName"
+                        }]]
                     }
-                ],
+                }],
                 "UserData": {
                     "Fn::Base64": {
                         "Fn::Join": [
@@ -139,7 +233,13 @@
                             [
                                 "#!/bin/bash\n",
                                 "echo ECS_CLUSTER=",
-                                { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]] },
+                                {
+                                    "Fn::Join": ["-", [{
+                                        "Ref": "AWS::StackName"
+                                    }, {
+                                        "Ref": "ClusterName"
+                                    }]]
+                                },
                                 " >> /etc/ecs/ecs.config\n",
                                 "echo ECS_ENABLE_TASK_IAM_ROLE=true >> /etc/ecs/ecs.config"
                             ]
@@ -149,11 +249,9 @@
                 "InstanceType": {
                     "Ref": "ECSInstanceType"
                 },
-                "SecurityGroupIds": [
-                    {
-                        "Ref": "furnaceIgniteSecurityGroup"
-                    }
-                ],
+                "SecurityGroupIds": [{
+                    "Ref": "furnaceIgniteSecurityGroup"
+                }],
                 "SubnetId": {
                     "Ref": "PrivateSubnet"
                 }
@@ -162,30 +260,26 @@
         "furnaceIgniteInstanceProfile": {
             "Type": "AWS::IAM::InstanceProfile",
             "Properties": {
-                "Roles": [
-                    {
-                        "Ref": "furnaceIgniteRole"
-                    }
-                ]
+                "Roles": [{
+                    "Ref": "furnaceIgniteRole"
+                }]
             }
         },
         "furnaceIgniteRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "AssumeRolePolicyDocument": {
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": [
-                                    "ec2.amazonaws.com"
-                                ]
-                            },
-                            "Action": [
-                                "sts:AssumeRole"
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": [
+                                "ec2.amazonaws.com"
                             ]
-                        }
-                    ]
+                        },
+                        "Action": [
+                            "sts:AssumeRole"
+                        ]
+                    }]
                 },
                 "Path": "/",
                 "ManagedPolicyArns": [
@@ -200,12 +294,14 @@
                 "CidrBlock": "10.10.0.0/16",
                 "EnableDnsSupport": true,
                 "EnableDnsHostnames": true,
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteVPC"]] }
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, "furnaceIgniteVPC"]]
                     }
-                ]
+                }]
             }
         },
         "PrivateSubnet": {
@@ -215,12 +311,14 @@
                     "Ref": "VPC"
                 },
                 "CidrBlock": "10.10.0.0/24",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnitePrivateSubnet"]] }
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, "furnaceIgnitePrivateSubnet"]]
                     }
-                ]
+                }]
             }
         },
         "PublicSubnet": {
@@ -230,12 +328,14 @@
                     "Ref": "VPC"
                 },
                 "CidrBlock": "10.10.1.0/24",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnitePublicSubnet"]] }
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, "furnaceIgnitePublicSubnet"]]
                     }
-                ],
+                }],
                 "MapPublicIpOnLaunch": true
             }
         },
@@ -267,12 +367,14 @@
                 "VpcId": {
                     "Ref": "VPC"
                 },
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnitePrivateRT"]] }
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, "furnaceIgnitePrivateRT"]]
                     }
-                ]
+                }]
             }
         },
         "PublicRouteTable": {
@@ -281,23 +383,27 @@
                 "VpcId": {
                     "Ref": "VPC"
                 },
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgnitePublicRT"]] }
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, "furnaceIgnitePublicRT"]]
                     }
-                ]
+                }]
             }
         },
         "InternetGateway": {
             "Type": "AWS::EC2::InternetGateway",
             "Properties": {
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteInternetGateway"]] }
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, "furnaceIgniteInternetGateway"]]
                     }
-                ]
+                }]
             }
         },
         "AttachGateway": {
@@ -326,12 +432,14 @@
                 "SubnetId": {
                     "Ref": "PublicSubnet"
                 },
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "furnaceIgniteNATGw"]] }
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, "furnaceIgniteNATGw"]]
                     }
-                ]
+                }]
             }
         },
         "EIP": {
@@ -367,154 +475,212 @@
         "updateStackTask": {
             "Type": "AWS::ECS::TaskDefinition",
             "Properties": {
-                "ContainerDefinitions": [
-                    {
-                        "Name": {"Ref":"TaskContainerName"},
-                        "Image": {"Ref":"TaskContainerImage"},
-                        "Cpu": "1",
-                        "Memory": "768",
-                        "Essential": true,
-                        "LogConfiguration": {
-                            "LogDriver": "awslogs",
-                            "Options": {
-                                "awslogs-group": {"Fn::Join": ["",["/ecs/",{ "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] }]]},
-                                "awslogs-region": { "Ref" : "AWS::Region" },
-                                "awslogs-stream-prefix": "ecs"
-                            }
+                "ContainerDefinitions": [{
+                    "Name": {
+                        "Ref": "TaskContainerName"
+                    },
+                    "Image": {
+                        "Ref": "TaskContainerImage"
+                    },
+                    "Cpu": "1",
+                    "Memory": "768",
+                    "Essential": true,
+                    "LogConfiguration": {
+                        "LogDriver": "awslogs",
+                        "Options": {
+                            "awslogs-group": {
+                                "Fn::Join": ["", ["/ecs/", {
+                                    "Fn::Join": ["-", [{
+                                        "Ref": "AWS::StackName"
+                                    }, {
+                                        "Ref": "TaskName"
+                                    }]]
+                                }]]
+                            },
+                            "awslogs-region": {
+                                "Ref": "AWS::Region"
+                            },
+                            "awslogs-stream-prefix": "ecs"
                         }
                     }
-                ],
+                }],
                 "NetworkMode": "bridge",
-                "Family": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] },
-                "TaskRoleArn": {"Fn::GetAtt": [
-                    "updateStackTaskRole",
-                    "Arn"
-                ]}
+                "Family": {
+                    "Fn::Join": ["-", [{
+                        "Ref": "AWS::StackName"
+                    }, {
+                        "Ref": "TaskName"
+                    }]]
+                },
+                "TaskRoleArn": {
+                    "Fn::GetAtt": [
+                        "updateStackTaskRole",
+                        "Arn"
+                    ]
+                }
             }
         },
         "updateStackTaskRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "AssumeRolePolicyDocument": {
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": [
-                                    "ecs-tasks.amazonaws.com"
-                                ]
-                            },
-                            "Action": [
-                                "sts:AssumeRole"
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": [
+                                "ecs-tasks.amazonaws.com"
                             ]
-                        }
-                    ]
+                        },
+                        "Action": [
+                            "sts:AssumeRole"
+                        ]
+                    }]
                 },
                 "Path": "/",
-                "Policies": [
-                    {
-                        "PolicyName": "updateStackTaskRolePolicy",
-                        "PolicyDocument": {
-                            "Version": "2012-10-17",
-                            "Statement": [{ "Fn::If": [ "NpmOrGitDefined",
-                                { 
-                                    "Effect": "Allow",
-                                    "Action": "secretsmanager:GetSecretValue",
-                                    "Resource": [
-                                        { "Fn::If": [ "GitTokenDefined", {"Ref": "gitTokenSecret" }, {"Ref" : "AWS::NoValue"}] },
-                                        { "Fn::If": [ "NpmTokenDefined", {"Ref": "npmTokenSecret" }, {"Ref" : "AWS::NoValue"} ] }
-                                    ]
-                                }, {"Ref" : "AWS::NoValue"}]},
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "lambda:*",
-                                        "kinesis:*",
-                                        "iam:*",
-                                        "s3:*"
-                                    ],
-                                    "Resource": [
-                                        {"Fn::Join": [":", ["arn:aws:lambda", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
-                                        {"Fn::Join": [":", ["arn:aws:kinesis", {"Ref": "AWS::Region"}, {"Ref": "AWS::AccountId"}, "*"]]},
-                                        {"Fn::Join": [":", ["arn:aws:s3::", {"Fn::Join": ["",[{"Ref":"ArtifactBucket"},"/*"]]}]]},
-                                        {"Fn::Join": [":", ["arn:aws:iam:", {"Ref": "AWS::AccountId"}, "*"]]}
-                                    ]
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "lambda:CreateEventSourceMapping",
-                                        "lambda:DeleteEventSourceMapping",
-                                        "lambda:UpdateEventSourceMapping",
-                                        "lambda:GetEventSourceMapping"
-                                    ],
-                                    "Resource": "*"
-                                }
-                            ]
-                        }
+                "Policies": [{
+                    "PolicyName": "updateStackTaskRolePolicy",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                                "Fn::If": ["NpmOrGitDefined",
+                                    {
+                                        "Effect": "Allow",
+                                        "Action": "secretsmanager:GetSecretValue",
+                                        "Resource": [{
+                                                "Fn::If": ["GitTokenDefined", {
+                                                    "Ref": "gitTokenSecret"
+                                                }, {
+                                                    "Ref": "AWS::NoValue"
+                                                }]
+                                            },
+                                            {
+                                                "Fn::If": ["NpmTokenDefined", {
+                                                    "Ref": "npmTokenSecret"
+                                                }, {
+                                                    "Ref": "AWS::NoValue"
+                                                }]
+                                            }
+                                        ]
+                                    }, {
+                                        "Ref": "AWS::NoValue"
+                                    }
+                                ]
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "lambda:*",
+                                    "kinesis:*",
+                                    "iam:*",
+                                    "s3:*"
+                                ],
+                                "Resource": [{
+                                        "Fn::Join": [":", ["arn:aws:lambda", {
+                                            "Ref": "AWS::Region"
+                                        }, {
+                                            "Ref": "AWS::AccountId"
+                                        }, "*"]]
+                                    },
+                                    {
+                                        "Fn::Join": [":", ["arn:aws:kinesis", {
+                                            "Ref": "AWS::Region"
+                                        }, {
+                                            "Ref": "AWS::AccountId"
+                                        }, "*"]]
+                                    },
+                                    {
+                                        "Fn::Join": [":", ["arn:aws:s3::", {
+                                            "Fn::Join": ["", [{
+                                                "Ref": "ArtifactBucket"
+                                            }, "/*"]]
+                                        }]]
+                                    },
+                                    {
+                                        "Fn::Join": [":", ["arn:aws:iam:", {
+                                            "Ref": "AWS::AccountId"
+                                        }, "*"]]
+                                    }
+                                ]
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "lambda:CreateEventSourceMapping",
+                                    "lambda:DeleteEventSourceMapping",
+                                    "lambda:UpdateEventSourceMapping",
+                                    "lambda:GetEventSourceMapping"
+                                ],
+                                "Resource": "*"
+                            }
+                        ]
                     }
-                ]
+                }]
             }
         },
         "updateStackTaskLogGroup": {
             "Type": "AWS::Logs::LogGroup",
             "Properties": {
-                "LogGroupName": {"Fn::Join": ["",["/ecs/",{ "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] }]]}
+                "LogGroupName": {
+                    "Fn::Join": ["", ["/ecs/", {
+                        "Fn::Join": ["-", [{
+                            "Ref": "AWS::StackName"
+                        }, {
+                            "Ref": "TaskName"
+                        }]]
+                    }]]
+                }
             }
         },
         "deployExecLambdaRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "AssumeRolePolicyDocument": {
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": [
-                                    "lambda.amazonaws.com"
-                                ]
-                            },
-                            "Action": [
-                                "sts:AssumeRole"
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": [
+                                "lambda.amazonaws.com"
                             ]
-                        }
-                    ]
+                        },
+                        "Action": [
+                            "sts:AssumeRole"
+                        ]
+                    }]
                 },
                 "Path": "/",
                 "ManagedPolicyArns": [
                     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
                 ],
-                "Policies": [
-                    {
-                        "PolicyName": "deployExecLambdaRolePolicy",
-                        "PolicyDocument": {
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "ecs:SubmitTaskStateChange",
-                                        "ecs:RunTask",
-                                        "ecs:StartTask",
-                                        "ecs:StopTask"
-                                    ],
-                                    "Resource": "arn:aws:ecs:*:*:*"
-                                },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "iam:GetRole",
-                                        "iam:PassRole"
-                                    ],
-                                    "Resource": {"Fn::GetAtt": [
+                "Policies": [{
+                    "PolicyName": "deployExecLambdaRolePolicy",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                                "Effect": "Allow",
+                                "Action": [
+                                    "ecs:SubmitTaskStateChange",
+                                    "ecs:RunTask",
+                                    "ecs:StartTask",
+                                    "ecs:StopTask"
+                                ],
+                                "Resource": "arn:aws:ecs:*:*:*"
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "iam:GetRole",
+                                    "iam:PassRole"
+                                ],
+                                "Resource": {
+                                    "Fn::GetAtt": [
                                         "updateStackTaskRole",
                                         "Arn"
-                                    ]}
+                                    ]
                                 }
-                            ]
-                        }
+                            }
+                        ]
                     }
-                ]
+                }]
             }
         },
         "deployExecLambda": {
@@ -528,20 +694,50 @@
                     ]
                 },
                 "Code": {
-                    "S3Bucket": { "Ref": "BootstrapCodeBucketName" },
-                    "S3Key": "deploy-exec" 
+                    "S3Bucket": {
+                        "Ref": "BootstrapCodeBucketName"
+                    },
+                    "S3Key": "deploy-exec"
                 },
                 "Description": "Lambda function to run the task to deploy Furnace",
-                "FunctionName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "deployExec"]]},
+                "FunctionName": {
+                    "Fn::Join": ["-", [{
+                        "Ref": "AWS::StackName"
+                    }, "deployExec"]]
+                },
                 "Environment": {
                     "Variables": {
-                        "TASK_DEFINITION": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "TaskName" }]] },
-                        "CONTAINER_NAME": {"Ref":"TaskContainerName"},
-                        "GIT_USERNAME": { "Fn::If": [ "GitUsernameDefined", {"Ref": "GitUsername" }, {"Ref" : "AWS::NoValue"}] },
-                        "CLUSTER": { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, { "Ref" : "ClusterName" }]] },
-                        "BUILD_BUCKET": {"Ref":"ArtifactBucket"},
+                        "TASK_DEFINITION": {
+                            "Fn::Join": ["-", [{
+                                "Ref": "AWS::StackName"
+                            }, {
+                                "Ref": "TaskName"
+                            }]]
+                        },
+                        "CONTAINER_NAME": {
+                            "Ref": "TaskContainerName"
+                        },
+                        "GIT_USERNAME": {
+                            "Fn::If": ["GitUsernameDefined", {
+                                "Ref": "GitUsername"
+                            }, {
+                                "Ref": "AWS::NoValue"
+                            }]
+                        },
+                        "CLUSTER": {
+                            "Fn::Join": ["-", [{
+                                "Ref": "AWS::StackName"
+                            }, {
+                                "Ref": "ClusterName"
+                            }]]
+                        },
+                        "BUILD_BUCKET": {
+                            "Ref": "ArtifactBucket"
+                        },
                         "PLATFORM": "aws",
-                        "FURNACE_INSTANCE": { "Ref" : "AWS::StackName" }
+                        "FURNACE_INSTANCE": {
+                            "Ref": "AWS::StackName"
+                        }
                     }
                 },
                 "Runtime": "nodejs8.10",
@@ -567,7 +763,11 @@
         "FurnaceSNSTopic": {
             "Type": "AWS::SNS::Topic",
             "Properties": {
-                "TopicName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "FurnaceStackUpdates"]]}
+                "TopicName": {
+                    "Fn::Join": ["-", [{
+                        "Ref": "AWS::StackName"
+                    }, "FurnaceStackUpdates"]]
+                }
             }
         },
         "deployTriggerLambda": {
@@ -575,63 +775,83 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "Code": {
-                    "S3Bucket": { "Ref": "BootstrapCodeBucketName" },
-                    "S3Key": "deploy-trigger" 
+                    "S3Bucket": {
+                        "Ref": "BootstrapCodeBucketName"
+                    },
+                    "S3Key": "deploy-trigger"
                 },
                 "Description": "Lambda function to trigger the deployment of Furnace",
-                "FunctionName": {"Fn::Join": ["-", [{ "Ref" : "AWS::StackName" }, "deployTrigger"]]},
+                "FunctionName": {
+                    "Fn::Join": ["-", [{
+                        "Ref": "AWS::StackName"
+                    }, "deployTrigger"]]
+                },
                 "Handler": "index.handler",
-                "Role": { "Fn::GetAtt": ["deployTriggerLambdaRole", "Arn"]},
+                "Role": {
+                    "Fn::GetAtt": ["deployTriggerLambdaRole", "Arn"]
+                },
                 "Runtime": "nodejs8.10",
                 "Timeout": 30,
                 "MemorySize": 128,
                 "Environment": {
                     "Variables": {
-                        "TOPIC": { "Ref": "FurnaceSNSTopic" },
-                        "FURNACE_INSTANCE": { "Ref" : "AWS::StackName" }
+                        "TOPIC": {
+                            "Ref": "FurnaceSNSTopic"
+                        },
+                        "FURNACE_INSTANCE": {
+                            "Ref": "AWS::StackName"
+                        }
                     }
                 }
             }
-          },
-          "ArtifactBucket": {	
-            "Type": "AWS::S3::Bucket",	
-            "Properties": {	
-                "BucketName": { "Ref": "ArtifactBucketName" }
-            }	
-          },
-          "deployTriggerLambdaRole": {
+        },
+        "ArtifactBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": {
+                    "Ref": "ArtifactBucketName"
+                }
+            }
+        },
+        "deployTriggerLambdaRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
-              "AssumeRolePolicyDocument": {
-                "Statement": [{
-                  "Effect": "Allow",
-                  "Principal": { "Service": ["lambda.amazonaws.com"] },
-                  "Action": ["sts:AssumeRole"]
-                }]
-              },
-              "Policies" : [{ "Fn::If": [ "GitTokenDefined", 
-                {
-                    "PolicyName": "deployTriggerLambdaRolePolicy",
-                    "PolicyDocument": {
-                        "Version": "2012-10-17",
-                        "Statement": [
-                            {
-                                "Effect": "Allow",
-                                "Action": "secretsmanager:GetSecretValue",
-                                "Resource": {"Ref": "gitTokenSecret" }
+                "AssumeRolePolicyDocument": {
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": ["lambda.amazonaws.com"]
+                        },
+                        "Action": ["sts:AssumeRole"]
+                    }]
+                },
+                "Policies": [{
+                    "Fn::If": ["GitTokenDefined",
+                        {
+                            "PolicyName": "deployTriggerLambdaRolePolicy",
+                            "PolicyDocument": {
+                                "Version": "2012-10-17",
+                                "Statement": [{
+                                    "Effect": "Allow",
+                                    "Action": "secretsmanager:GetSecretValue",
+                                    "Resource": {
+                                        "Ref": "gitTokenSecret"
+                                    }
+                                }]
                             }
-                        ]
-                    }
-                }, {"Ref" : "AWS::NoValue"} ]
-            }],
-              "Path": "/",
-              "ManagedPolicyArns": [
-                  "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-                  "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
+                        }, {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                }],
+                "Path": "/",
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                    "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
                 ]
             }
-          },
-          "hookResource": {
+        },
+        "hookResource": {
             "Type": "AWS::ApiGateway::Resource",
             "Properties": {
                 "RestApiId": {
@@ -668,7 +888,9 @@
                 "ParentId": {
                     "Ref": "apiResource"
                 },
-                "RestApiId": {"Ref":"api"}
+                "RestApiId": {
+                    "Ref": "api"
+                }
             }
         },
         "deployPOST": {
@@ -685,12 +907,18 @@
                 "Integration": {
                     "Type": "AWS_PROXY",
                     "IntegrationHttpMethod": "POST",
-                    "Uri": {"Fn::Join": ["",
-                        ["arn:aws:apigateway:", {"Ref": "AWS::Region"}, ":lambda:path/2015-03-31/functions/", {"Fn::GetAtt": ["deployTriggerLambda", "Arn"]}, "/invocations"]
-                    ]}
+                    "Uri": {
+                        "Fn::Join": ["",
+                            ["arn:aws:apigateway:", {
+                                "Ref": "AWS::Region"
+                            }, ":lambda:path/2015-03-31/functions/", {
+                                "Fn::GetAtt": ["deployTriggerLambda", "Arn"]
+                            }, "/invocations"]
+                        ]
+                    }
                 }
             }
-        },    
+        },
         "hookPOST": {
             "Type": "AWS::ApiGateway::Method",
             "Properties": {
@@ -705,74 +933,92 @@
                 "Integration": {
                     "Type": "AWS_PROXY",
                     "IntegrationHttpMethod": "POST",
-                    "Uri": {"Fn::Join": ["",
-                        ["arn:aws:apigateway:", {"Ref": "AWS::Region"}, ":lambda:path/2015-03-31/functions/", {"Fn::GetAtt": ["deployTriggerLambda", "Arn"]}, "/invocations"]
-                    ]}
+                    "Uri": {
+                        "Fn::Join": ["",
+                            ["arn:aws:apigateway:", {
+                                "Ref": "AWS::Region"
+                            }, ":lambda:path/2015-03-31/functions/", {
+                                "Fn::GetAtt": ["deployTriggerLambda", "Arn"]
+                            }, "/invocations"]
+                        ]
+                    }
                 }
             }
-        }, 
+        },
         "api": {
             "Type": "AWS::ApiGateway::RestApi",
             "Properties": {
-                "Name": { "Fn::Join": ["", ["Deploy API (", { "Ref" : "AWS::StackName" }, ")"]] }
+                "Name": {
+                    "Fn::Join": ["", ["Deploy API (", {
+                        "Ref": "AWS::StackName"
+                    }, ")"]]
+                }
             }
         },
         "apiGatewayCloudWatchLogsRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "AssumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Principal": { "Service": ["apigateway.amazonaws.com"] },
-                    "Action": ["sts:AssumeRole"]
-                }]
-                },
-                "Policies": [{
-                "PolicyName": "ApiGatewayLogsPolicy",
-                "PolicyDocument": {
                     "Version": "2012-10-17",
                     "Statement": [{
-                    "Effect": "Allow",
-                    "Action": [
-                        "logs:CreateLogGroup",
-                        "logs:CreateLogStream",
-                        "logs:DescribeLogGroups",
-                        "logs:DescribeLogStreams",
-                        "logs:PutLogEvents",
-                        "logs:GetLogEvents",
-                        "logs:FilterLogEvents"
-                    ],
-                    "Resource": "*"
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": ["apigateway.amazonaws.com"]
+                        },
+                        "Action": ["sts:AssumeRole"]
                     }]
-                }
+                },
+                "Policies": [{
+                    "PolicyName": "ApiGatewayLogsPolicy",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:DescribeLogGroups",
+                                "logs:DescribeLogStreams",
+                                "logs:PutLogEvents",
+                                "logs:GetLogEvents",
+                                "logs:FilterLogEvents"
+                            ],
+                            "Resource": "*"
+                        }]
+                    }
                 }]
             }
         },
         "apiGatewayAccount": {
             "Type": "AWS::ApiGateway::Account",
             "Properties": {
-                "CloudWatchRoleArn": {"Fn::GetAtt": ["apiGatewayCloudWatchLogsRole", "Arn"] }
+                "CloudWatchRoleArn": {
+                    "Fn::GetAtt": ["apiGatewayCloudWatchLogsRole", "Arn"]
+                }
             }
         },
         "apiStage": {
             "DependsOn": ["apiGatewayAccount"],
             "Type": "AWS::ApiGateway::Stage",
             "Properties": {
-                "DeploymentId": {"Ref": "apiDeployment"},
+                "DeploymentId": {
+                    "Ref": "apiDeployment"
+                },
                 "MethodSettings": [{
                     "DataTraceEnabled": true,
                     "HttpMethod": "*",
                     "LoggingLevel": "INFO",
                     "ResourcePath": "/*"
                 }],
-                "RestApiId": {"Ref": "api"},
+                "RestApiId": {
+                    "Ref": "api"
+                },
                 "StageName": "v1"
             }
         },
         "apiDeployment": {
             "Type": "AWS::ApiGateway::Deployment",
-            "DependsOn": ["deployPOST","hookPOST"],
+            "DependsOn": ["deployPOST", "hookPOST"],
             "Properties": {
                 "RestApiId": {
                     "Ref": "api"
@@ -780,70 +1026,119 @@
             }
         },
         "deployTriggerPermission": {
-            "Type": "AWS::Lambda::Permission", 
+            "Type": "AWS::Lambda::Permission",
             "Properties": {
-                "Action": "lambda:InvokeFunction", 
+                "Action": "lambda:InvokeFunction",
                 "SourceArn": {
                     "Fn::Join": [
                         "",
                         [
                             "arn:aws:execute-api:",
-                            {"Ref": "AWS::Region"},
+                            {
+                                "Ref": "AWS::Region"
+                            },
                             ":",
-                            {"Ref": "AWS::AccountId"},
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
                             ":",
-                            {"Ref": "api" },
+                            {
+                                "Ref": "api"
+                            },
                             "/*"
                         ]
                     ]
                 },
-                "FunctionName": {"Fn::GetAtt": ["deployTriggerLambda", "Arn"]},
+                "FunctionName": {
+                    "Fn::GetAtt": ["deployTriggerLambda", "Arn"]
+                },
                 "Principal": "apigateway.amazonaws.com"
             }
         },
         "deployExecLambdaInvokePermission": {
             "Type": "AWS::Lambda::Permission",
             "Properties": {
-              "Action": "lambda:InvokeFunction",
-              "Principal": "sns.amazonaws.com",
-              "SourceArn": { "Ref": "FurnaceSNSTopic" },
-              "FunctionName": {
-                  "Fn::GetAtt": [ "deployExecLambda", "Arn" ]
+                "Action": "lambda:InvokeFunction",
+                "Principal": "sns.amazonaws.com",
+                "SourceArn": {
+                    "Ref": "FurnaceSNSTopic"
+                },
+                "FunctionName": {
+                    "Fn::GetAtt": ["deployExecLambda", "Arn"]
                 }
             }
         },
         "npmTokenSecret": {
-            "Type" : "AWS::SecretsManager::Secret",
+            "Type": "AWS::SecretsManager::Secret",
             "Condition": "NpmTokenDefined",
-            "Properties" : {
-              "Description" : "NPM Token for private repos",
-              "SecretString" : { "Ref": "NpmToken" },
-              "Name" : { "Fn::Join": ["", [{ "Ref" : "AWS::StackName" },"/NpmToken"]] }
+            "Properties": {
+                "Description": "NPM Token for private repos",
+                "SecretString": {
+                    "Ref": "NpmToken"
+                },
+                "Name": {
+                    "Fn::Join": ["", [{
+                        "Ref": "AWS::StackName"
+                    }, "/NpmToken"]]
+                }
             }
         },
         "gitTokenSecret": {
-            "Type" : "AWS::SecretsManager::Secret",
+            "Type": "AWS::SecretsManager::Secret",
             "Condition": "GitTokenDefined",
-            "Properties" : {
-              "Description" : "Git Token for private repos",
-              "SecretString" : { "Ref": "GitToken" },
-              "Name" : { "Fn::Join": ["", [{ "Ref" : "AWS::StackName" },"/GitToken"]] }
+            "Properties": {
+                "Description": "Git Token for private repos",
+                "SecretString": {
+                    "Ref": "GitToken"
+                },
+                "Name": {
+                    "Fn::Join": ["", [{
+                        "Ref": "AWS::StackName"
+                    }, "/GitToken"]]
+                }
             }
         },
         "gitHookSecretSecret": {
-            "Type" : "AWS::SecretsManager::Secret",
+            "Type": "AWS::SecretsManager::Secret",
             "Condition": "GitHookSecretDefined",
-            "Properties" : {
-              "Description" : "Git secret for Hooks",
-              "SecretString" : { "Ref": "GitHookSecret" },
-              "Name" : { "Fn::Join": ["", [{ "Ref" : "AWS::StackName" },"/GitHookSecret"]] }
+            "Properties": {
+                "Description": "Git secret for Hooks",
+                "SecretString": {
+                    "Ref": "GitHookSecret"
+                },
+                "Name": {
+                    "Fn::Join": ["", [{
+                        "Ref": "AWS::StackName"
+                    }, "/GitHookSecret"]]
+                }
+            }
+        },
+        "apiKeySecret": {
+            "Type": "AWS::SecretsManager::Secret",
+            "Condition": "ApiKeyDefined",
+            "Properties": {
+                "Description": "API key for CLI auth",
+                "SecretString": {
+                    "Ref": "ApiKey"
+                },
+                "Name": {
+                    "Fn::Join": ["", [{
+                        "Ref": "AWS::StackName"
+                    }, "/ApiKey"]]
+                }
             }
         }
     },
-    "Outputs" : {
-      "apiURL" : {
-        "Description": "The URL of the endpoint to send request to trigger deployments",  
-        "Value": {"Fn::Join": ["", ["https://", {"Ref": "api"}, ".execute-api.", {"Ref": "AWS::Region"}, ".amazonaws.com/v1"]]}
-      }
+    "Outputs": {
+        "apiURL": {
+            "Description": "The URL of the endpoint to send request to trigger deployments",
+            "Value": {
+                "Fn::Join": ["", ["https://", {
+                    "Ref": "api"
+                }, ".execute-api.", {
+                    "Ref": "AWS::Region"
+                }, ".amazonaws.com/v1"]]
+            }
+        }
     }
 }

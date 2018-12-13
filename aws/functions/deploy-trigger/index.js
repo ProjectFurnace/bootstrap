@@ -55,6 +55,18 @@ async function verifyGitSecret(headers, stringBody) {
   return false;
 }
 
+// Verification function to check if the CLI request has the right API Key
+async function verifyApiKey(headers) {
+  if (headers['X-API-Key']) {
+    // Get secret from secret store
+    const apiKey = await getSM(process.env.FURNACE_INSTANCE.concat('/ApiKey'));
+    if (apiKey.SecretString === headers['X-API-Key']) {
+      return true;
+    }
+  }
+  return false;
+}
+
 exports.handler = async (event, context, callback) => {
   // if debug is enabled, show the full received event
   if (process.env.DEBUG) {
@@ -125,6 +137,11 @@ exports.handler = async (event, context, callback) => {
         repo = body.repository.name;
         branch = body.repository.default_branch;
       } else {
+        if (!verifyApiKey(event.headers)) {
+          callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'API KEY validation failed' }) });
+          return;
+        }
+
         const parts = body.remoteUrl.split('/');
 
         [,,, owner, repo] = parts;
