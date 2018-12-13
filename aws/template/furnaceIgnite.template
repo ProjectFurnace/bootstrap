@@ -572,7 +572,8 @@
                                     "lambda:*",
                                     "kinesis:*",
                                     "iam:*",
-                                    "s3:*"
+                                    "s3:*",
+                                    "es:*"
                                 ],
                                 "Resource": [{
                                         "Fn::Join": [":", ["arn:aws:lambda", {
@@ -583,6 +584,13 @@
                                     },
                                     {
                                         "Fn::Join": [":", ["arn:aws:kinesis", {
+                                            "Ref": "AWS::Region"
+                                        }, {
+                                            "Ref": "AWS::AccountId"
+                                        }, "*"]]
+                                    },
+                                    {
+                                        "Fn::Join": [":", ["arn:aws:es", {
                                             "Ref": "AWS::Region"
                                         }, {
                                             "Ref": "AWS::AccountId"
@@ -826,23 +834,31 @@
                     }]
                 },
                 "Policies": [{
-                    "Fn::If": ["GitTokenDefined",
-                        {
-                            "PolicyName": "deployTriggerLambdaRolePolicy",
-                            "PolicyDocument": {
-                                "Version": "2012-10-17",
-                                "Statement": [{
-                                    "Effect": "Allow",
-                                    "Action": "secretsmanager:GetSecretValue",
-                                    "Resource": {
+                    "PolicyName": "deployTriggerLambdaRolePolicy",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                            "Effect": "Allow",
+                            "Action": "secretsmanager:GetSecretValue",
+                            "Resource": [{
+                                    "Fn::If": ["GitTokenDefined", {
                                         "Ref": "gitTokenSecret"
-                                    }
-                                }]
-                            }
-                        }, {
-                            "Ref": "AWS::NoValue"
-                        }
-                    ]
+                                    }, {
+                                        "Ref": "AWS::NoValue"
+                                    }]
+                                }, {
+                                    "Fn::If": ["GitHookSecretDefined", {
+                                        "Ref": "gitHookSecretSecret"
+                                    }, {
+                                        "Ref": "AWS::NoValue"
+                                    }]
+                                },
+                                {
+                                    "Ref": "apiKeySecret"
+                                }
+                            ]
+                        }]
+                    }
                 }],
                 "Path": "/",
                 "ManagedPolicyArns": [

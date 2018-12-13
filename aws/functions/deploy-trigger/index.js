@@ -48,8 +48,12 @@ async function verifyGitSecret(headers, stringBody) {
     // Get secret from secret store
     const gitSecret = await getSM(process.env.FURNACE_INSTANCE.concat('/GitHookSecret'));
     if (gitSecret.SecretString) {
-      const signature = `sha1=${crypto.createHmac('sha1', gitSecret).update(stringBody).digest('hex')}`;
-      return crypto.timingSafeEqual(Buffer.from(headers['x-hub-signature']), Buffer.from(signature));
+      try {
+        const signature = `sha1=${crypto.createHmac('sha1', gitSecret.SecretString).update(stringBody).digest('hex')}`;
+        return crypto.timingSafeEqual(Buffer.from(headers['X-Hub-Signature']), Buffer.from(signature));
+      } catch (e) {
+        return false;
+      }
     }
   }
   return false;
