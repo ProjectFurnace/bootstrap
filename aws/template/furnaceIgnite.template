@@ -573,7 +573,9 @@
                                     "kinesis:*",
                                     "iam:*",
                                     "s3:*",
-                                    "es:*"
+                                    "es:*",
+                                    "firehose:*",
+                                    "redshift:*"
                                 ],
                                 "Resource": [{
                                         "Fn::Join": [":", ["arn:aws:lambda", {
@@ -590,6 +592,20 @@
                                         }, "*"]]
                                     },
                                     {
+                                        "Fn::Join": [":", ["arn:aws:firehose", {
+                                            "Ref": "AWS::Region"
+                                        }, {
+                                            "Ref": "AWS::AccountId"
+                                        }, "*"]]
+                                    },
+                                    {
+                                        "Fn::Join": [":", ["arn:aws:redshift", {
+                                            "Ref": "AWS::Region"
+                                        }, {
+                                            "Ref": "AWS::AccountId"
+                                        }, "*", "*"]]
+                                    },
+                                    {
                                         "Fn::Join": [":", ["arn:aws:es", {
                                             "Ref": "AWS::Region"
                                         }, {
@@ -597,11 +613,7 @@
                                         }, "*"]]
                                     },
                                     {
-                                        "Fn::Join": [":", ["arn:aws:s3::", {
-                                            "Fn::Join": ["", [{
-                                                "Ref": "ArtifactBucket"
-                                            }, "/*"]]
-                                        }]]
+                                        "Fn::Join": [":", ["arn:aws:s3::", "*"]]
                                     },
                                     {
                                         "Fn::Join": [":", ["arn:aws:iam:", {
