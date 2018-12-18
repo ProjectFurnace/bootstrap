@@ -18,7 +18,7 @@
         },
         "TaskContainerImage": {
             "Type": "String",
-            "Default": "966318141838.dkr.ecr.eu-west-1.amazonaws.com/project-furnace/deploy-will:latest",
+            "Default": "projectfurnace/deploy",
             "Description": "The docker image to use for the Stack Updater Task"
         },
         "TaskContainerName": {
@@ -636,6 +636,7 @@
                                     "ec2:DescribeSubnets",
                                     "ec2:DescribeVpcs",
                                     "ec2:DescribeInternetGateways",
+                                    "es:ListDomainNames",
                                     "sns:CreateTopic",
                                     "sns:Get*",
                                     "sns:List*",
