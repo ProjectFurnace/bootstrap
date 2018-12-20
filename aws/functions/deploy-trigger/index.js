@@ -44,6 +44,10 @@ function getSM(name) {
 
 // Verification function to check if it is actually GitHub who is POSTing here
 async function verifyGitSecret(headers, stringBody) {
+  if (process.env.DEBUG) {
+    // eslint-disable-next-line no-console
+    console.log('verifying git secret...');
+  }
   if (headers['X-Hub-Signature']) {
     // Get secret from secret store
     const gitSecret = await getSM(process.env.FURNACE_INSTANCE.concat('/GitHookSecret'));
@@ -61,6 +65,10 @@ async function verifyGitSecret(headers, stringBody) {
 
 // Verification function to check if the CLI request has the right API Key
 async function verifyApiKey(headers) {
+  if (process.env.DEBUG) {
+    // eslint-disable-next-line no-console
+    console.log('verifying api key...');
+  }
   if (headers['X-API-Key']) {
     // Get secret from secret store
     const apiKey = await getSM(process.env.FURNACE_INSTANCE.concat('/ApiKey'));
@@ -83,7 +91,7 @@ exports.handler = async (event, context, callback) => {
 
     if (body.deployment) {
       // first let's validate the github signature
-      if (!verifyGitSecret(event.headers, event.body)) {
+      if (!await verifyGitSecret(event.headers, event.body)) {
         callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
         return;
       }
@@ -117,7 +125,7 @@ exports.handler = async (event, context, callback) => {
       });
     // this is just a test hook from github
     } else if (body.hook && body.hook.type === 'Repository') {
-      if (verifyGitSecret(event.headers, event.body)) {
+      if (await verifyGitSecret(event.headers, event.body)) {
         callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Github test hook received' }) });
       } else {
         callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
@@ -133,7 +141,7 @@ exports.handler = async (event, context, callback) => {
       // first option is github hook
       if (body.repository) {
         // first let's validate the github signature
-        if (!verifyGitSecret(event.headers, event.body)) {
+        if (!await verifyGitSecret(event.headers, event.body)) {
           callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
           return;
         }
@@ -141,7 +149,7 @@ exports.handler = async (event, context, callback) => {
         repo = body.repository.name;
         branch = body.repository.default_branch;
       } else {
-        if (!verifyApiKey(event.headers)) {
+        if (!await verifyApiKey(event.headers)) {
           callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'API KEY validation failed' }) });
           return;
         }
