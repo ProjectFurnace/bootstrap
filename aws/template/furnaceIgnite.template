@@ -655,7 +655,7 @@
                                     "secretsmanager:GetSecretValue"
                                 ],
                                 "Resource": {
-                                    "Fn::Join": ["", ["arn:aws:secretmanager:", {
+                                    "Fn::Join": ["", ["arn:aws:secretsmanager:", {
                                         "Ref": "AWS::Region"
                                     }, ":", {
                                         "Ref": "AWS::AccountId"
