@@ -648,6 +648,23 @@
                                     "cloudwatch:DisableAlarmActions"
                                 ],
                                 "Resource": "*"
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "secretsmanager:GetSecretValue"
+                                ],
+                                "Resource": {
+                                    "Fn::Join": ["", ["arn:aws:secretmanager:", {
+                                        "Ref": "AWS::Region"
+                                    }, ":", {
+                                        "Ref": "AWS::AccountId"
+                                    }, ":secret:", {
+
+                                    }, {
+                                        "Ref": "AWS::StackName"
+                                    }, "/*"]]
+                                }
                             }
                         ]
                     }
