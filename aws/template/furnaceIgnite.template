@@ -660,8 +660,6 @@
                                     }, ":", {
                                         "Ref": "AWS::AccountId"
                                     }, ":secret:", {
-
-                                    }, {
                                         "Ref": "AWS::StackName"
                                     }, "/*"]]
                                 }
