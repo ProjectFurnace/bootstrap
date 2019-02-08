@@ -10,7 +10,7 @@
     "jest": "^23.6.0"
   },
   "keywords": ["furnace","lambda","aws"],
-  "author": "Guillem Mateos <guillem.mateos@***REMOVED***>",
+  "author": "Guillem Mateos <guillem.mateos@furnace.org>",
   "license": "Apache-2.0",
-  "homepage": "https://projectfurnace.io"
+  "homepage": "https://furnace.org"
 }
