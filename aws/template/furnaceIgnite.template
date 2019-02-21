@@ -575,7 +575,8 @@
                                     "s3:*",
                                     "es:*",
                                     "firehose:*",
-                                    "redshift:*"
+                                    "redshift:*",
+                                    "dynamodb:*"
                                 ],
                                 "Resource": [{
                                         "Fn::Join": [":", ["arn:aws:lambda", {
@@ -619,6 +620,13 @@
                                         "Fn::Join": [":", ["arn:aws:iam:", {
                                             "Ref": "AWS::AccountId"
                                         }, "*"]]
+                                    },
+                                    {
+                                        "Fn::Join": [":", ["arn:aws:dynamodb", {
+                                            "Ref": "AWS::Region"
+                                        }, {
+                                            "Ref": "AWS::AccountId"
+                                        }, "*"]]
                                     }
                                 ]
                             },
@@ -645,7 +653,9 @@
                                     "cloudwatch:List*",
                                     "cloudwatch:PutMetricAlarm",
                                     "cloudwatch:EnableAlarmActions",
-                                    "cloudwatch:DisableAlarmActions"
+                                    "cloudwatch:DisableAlarmActions",
+                                    "elasticache:CreateCacheCluster",
+                                    "elasticache:DescribeCacheClusters"
                                 ],
                                 "Resource": "*"
                             },
