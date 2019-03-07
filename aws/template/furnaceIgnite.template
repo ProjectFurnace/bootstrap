@@ -655,7 +655,8 @@
                                     "cloudwatch:EnableAlarmActions",
                                     "cloudwatch:DisableAlarmActions",
                                     "elasticache:CreateCacheCluster",
-                                    "elasticache:DescribeCacheClusters"
+                                    "elasticache:DescribeCacheClusters",
+                                    "ssm:DescribeParameters"
                                 ],
                                 "Resource": "*"
                             },
@@ -679,12 +680,12 @@
                                 "Action": [
                                     "ssm:DeleteParameter",
                                     "ssm:DeleteParameters",
-                                    "ssm:DescribeParameters",
                                     "ssm:GetParameter",
                                     "ssm:GetParameters",
                                     "ssm:GetParametersByPath",
                                     "ssm:GetParameterHistory",
-                                    "ssm:PutParameter"
+                                    "ssm:PutParameter",
+                                    "ssm:ListTagsForResource"
                                 ],
                                 "Resource": {
                                     "Fn::Join": ["", ["arn:aws:ssm:", {
