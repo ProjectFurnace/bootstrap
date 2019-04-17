@@ -48,7 +48,7 @@
         },
         "GitHookSecret": {
             "Type": "String",
-            "Description": "NPM Token for private repos",
+            "Description": "Git hook secret",
             "Default": "",
             "NoEcho": true
         },

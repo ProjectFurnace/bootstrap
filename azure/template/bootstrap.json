@@ -1,0 +1,278 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "GitToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Git token"
+      }
+    },
+    "GitHookSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Git hook secret"
+      }
+    },
+    "ApiKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "API Key"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "furnaceignitesaf",
+      "metadata": {
+        "description": "Storage account name"
+      }
+    },
+    "containerName": {
+      "type": "string",
+      "defaultValue": "furnaceignitecf",
+      "metadata": {
+        "description": "Storage container name"
+      }
+    },
+    "blobUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Blob URL for functions"
+      }
+    }
+  },
+  "variables": {
+    "sites_deploy_name": "[concat(resourceGroup().name,'-deploy')]",
+    "eventhub_deploy_namespace_name": "[concat(resourceGroup().name,'-deployHubNS')]",
+    "eventhub_deploy_hub_name": "[concat(resourceGroup().name,'-deployHub')]",
+    "serverfarms_furnace_arm_deploy_name": "[concat(resourceGroup().name,'-furnaceArmDeploy')]",
+    "keyVaultName": "[concat(resourceGroup().name,'-vault')]",
+    "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
+  },
+  "resources": [{
+      "name": "[parameters('storageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2018-07-01",
+      "location": "[resourceGroup().location]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "properties": {
+        "accessTier": "Hot"
+      },
+      "resources": [{
+        "name": "[concat('default/', parameters('containerName'))]",
+        "type": "blobServices/containers",
+        "apiVersion": "2018-07-01",
+        "dependsOn": [
+          "[parameters('storageAccountName')]"
+        ]
+      }]
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces",
+      "apiVersion": "2017-04-01",
+      "name": "[variables('eventhub_deploy_namespace_name')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic",
+        "capacity": 1
+      },
+      "properties": {
+        "isAutoInflateEnabled": false,
+        "maximumThroughputUnits": 0
+      }
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+      "apiVersion": "2017-04-01",
+      "name": "[concat(variables('eventhub_deploy_namespace_name'), '/MyRootManageSharedAccessKey')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces', variables('eventhub_deploy_namespace_name'))]",
+        "[resourceId('Microsoft.EventHub/namespaces/eventhubs', variables('eventhub_deploy_namespace_name'), variables('eventhub_deploy_hub_name'))]"
+      ],
+      "properties": {
+        "rights": [
+          "Listen",
+          "Manage",
+          "Send"
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs",
+      "apiVersion": "2017-04-01",
+      "name": "[concat(variables('eventhub_deploy_namespace_name'),'/', variables('eventhub_deploy_hub_name'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces', variables('eventhub_deploy_namespace_name'))]"
+      ],
+      "properties": {
+        "messageRetentionInDays": 1,
+        "partitionCount": 2,
+        "status": "Active"
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2015-04-01",
+      "name": "[variables('serverfarms_furnace_arm_deploy_name')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "name": "[variables('serverfarms_furnace_arm_deploy_name')]",
+        "computeMode": "Dynamic",
+        "sku": "Dynamic"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2015-08-01",
+      "name": "[variables('sites_deploy_name')]",
+      "location": "[resourceGroup().location]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('serverfarms_furnace_arm_deploy_name'))]",
+        "[resourceId('Microsoft.EventHub/namespaces/eventhubs', variables('eventhub_deploy_namespace_name'), variables('eventhub_deploy_hub_name'))]",
+        "[resourceId(concat('Microsoft.EventHub/namespaces/AuthorizationRules'),variables('eventhub_deploy_namespace_name'),'MyRootManageSharedAccessKey')]"
+      ],
+      "kind": "functionapp",
+      "resources": [{
+        "name": "appsettings",
+        "type": "config",
+        "apiVersion": "2015-08-01",
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/sites', variables('sites_deploy_name'))]",
+          "[resourceId('Microsoft.EventHub/namespaces/eventhubs', variables('eventhub_deploy_namespace_name'), variables('eventhub_deploy_hub_name'))]",
+          "[resourceId(concat('Microsoft.EventHub/namespaces/AuthorizationRules'),variables('eventhub_deploy_namespace_name'),'MyRootManageSharedAccessKey')]"
+        ],
+        "properties": {
+          "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+          "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+          "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+          "WEBSITE_CONTENTSHARE": "[toLower(variables('sites_deploy_name'))]",
+          "FUNCTIONS_WORKER_RUNTIME": "node",
+          "DEBUG": "1",
+          "FURNACE_INSTANCE": "[resourceGroup().name]",
+          "WEBSITE_RUN_FROM_PACKAGE": "[parameters('blobUrl')]",
+          "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
+          "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components/', variables('sites_deploy_name')), '2015-05-01').InstrumentationKey]",
+          "FUNCTIONS_EXTENSION_VERSION": "~2",
+          "eventPullConnectionString": "[concat('Endpoint=sb://',variables('eventhub_deploy_namespace_name'),'servicebus.windows.net/;SharedAccessKeyName=MyRootManageSharedAccessKey;SharedAccessKey=',listKeys(resourceId(concat('Microsoft.EventHub/namespaces/AuthorizationRules'),variables('eventhub_deploy_namespace_name'),'MyRootManageSharedAccessKey'),'2015-08-01').primaryConnectionString)]"
+        }
+      }],
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [{
+            "name": "[concat(variables('sites_deploy_name'), '.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('sites_deploy_name'), '.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('serverfarms_furnace_arm_deploy_name'))]"
+      }
+    },
+    {
+      "apiVersion": "2018-05-01-preview",
+      "name": "[variables('sites_deploy_name')]",
+      "type": "microsoft.insights/components",
+      "location": "East US",
+      "tags": {
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', variables('sites_deploy_name'))]": "Resource"
+      },
+      "properties": {
+        "ApplicationId": "[[variables('sites_deploy_name')]]"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/hostNameBindings",
+      "apiVersion": "2016-08-01",
+      "name": "[concat(variables('sites_deploy_name'), '/', variables('sites_deploy_name'), '.azurewebsites.net')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('sites_deploy_name'))]"
+      ],
+      "properties": {
+        "siteName": "[variables('sites_deploy_name')]",
+        "hostNameType": "Verified"
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "name": "[variables('keyVaultName')]",
+      "apiVersion": "2018-02-14",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "accessPolicies": [{
+          "objectId": "[reference(concat('Microsoft.Web/sites/', variables('sites_deploy_name')), '2016-08-01', 'Full').identity.principalId]",
+          "tenantId": "[subscription().tenantId]",
+          "permissions": {
+            "keys": ["list","get"],
+            "secrets": ["list","get"]
+          }
+        }],
+        "sku": {
+          "name": "Standard",
+          "family": "A"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "name": "[concat(variables('keyVaultName'), '/GitToken')]",
+      "apiVersion": "2018-02-14",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ],
+      "properties": {
+        "value": "[parameters('GitToken')]"
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "name": "[concat(variables('keyVaultName'), '/GitHookSecret')]",
+      "apiVersion": "2018-02-14",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ],
+      "properties": {
+        "value": "[parameters('GitHookSecret')]"
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "name": "[concat(variables('keyVaultName'), '/ApiKey')]",
+      "apiVersion": "2018-02-14",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ],
+      "properties": {
+        "value": "[parameters('ApiKey')]"
+      }
+    }
+  ],
+  "outputs": {
+    "apiUrl": {
+      "type": "string",
+      "value": "[concat('https://', variables('sites_deploy_name'), '.azurewebsites.net/api/deploy-trigger')]"
+    },
+    "connectionString": {
+      "type": "string",
+      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2015-05-01-preview').key1)]"
+    }
+  }
+}
