@@ -163,7 +163,7 @@
           "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
           "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components/', variables('sites_deploy_name')), '2015-05-01').InstrumentationKey]",
           "FUNCTIONS_EXTENSION_VERSION": "~2",
-          "eventPullConnectionString": "[concat('Endpoint=sb://',variables('eventhub_deploy_namespace_name'),'servicebus.windows.net/;SharedAccessKeyName=MyRootManageSharedAccessKey;SharedAccessKey=',listKeys(resourceId(concat('Microsoft.EventHub/namespaces/AuthorizationRules'),variables('eventhub_deploy_namespace_name'),'MyRootManageSharedAccessKey'),'2015-08-01').primaryConnectionString)]"
+          "eventPullConnectionString": "[listKeys(resourceId(concat('Microsoft.EventHub/namespaces/AuthorizationRules'),variables('eventhub_deploy_namespace_name'),'MyRootManageSharedAccessKey'),'2015-08-01').primaryConnectionString]"
         }
       }],
       "properties": {

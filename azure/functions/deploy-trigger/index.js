@@ -94,7 +94,7 @@ module.exports = async function (context, request) {
   
       if (body.deployment) {
         // first let's validate the github signature
-        if (!await verifyGitSecret(request.headers, request.body, context)) {
+        if (!await verifyGitSecret(request.headers, request.rawBody, context)) {
           context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
           return;
         }
@@ -111,12 +111,12 @@ module.exports = async function (context, request) {
   
         if (process.env.DEBUG) {
           // eslint-disable-next-line no-console
-          context.log(`Message ${params.Message} sent to the topic ${params.TopicArn} with ID ${data.MessageId}`);
+          context.log(`Message sent to the eventHub`);
         }
         context.done(null, { status: 200, body: JSON.stringify({ msg: 'Deployment successfully started' }) });
       // this is just a test hook from github
       } else if (body.hook && body.hook.type === 'Repository') {
-        if (await verifyGitSecret(request.headers, request.body, context)) {
+        if (await verifyGitSecret(request.headers, request.rawBody, context)) {
           context.done(null, { status: 200, body: JSON.stringify({ msg: 'Github test hook received' }) });
         } else {
           context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
@@ -132,7 +132,7 @@ module.exports = async function (context, request) {
         // first option is github hook
         if (body.repository) {
           // first let's validate the github signature
-          if (!await verifyGitSecret(request.headers, request.body, context)) {
+          if (!await verifyGitSecret(request.headers, request.rawBody, context)) {
             context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
             return;
           }
