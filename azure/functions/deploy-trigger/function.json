@@ -1,0 +1,1 @@
+{"disabled":false,"scriptFile":"index.js","bindings":[{"type":"httpTrigger","direction":"in","name":"request","authLevel":"anonymous"},{"type":"eventHub","direction":"out","name":"eventOutput","eventHubName":"furnacerg-deployHub","connection":"eventPullConnectionString"},{"type":"http","direction":"out","name":"$return"}]}
