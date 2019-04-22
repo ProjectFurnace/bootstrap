@@ -94,19 +94,17 @@ module.exports = async function (context, request) {
   
       if (body.deployment) {
         // first let's validate the github signature
-        if (!await verifyGitSecret(request.headers, request.rawBody, context)) {
-          context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
-          return;
-        }
+        // if (!await verifyGitSecret(request.headers, request.rawBody, context)) {
+        //   context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+        //   return;
+        // }
   
         // send message to queue
         context.bindings.eventOutput  = {
-          body: JSON.stringify({
             remoteUrl: body.repository.clone_url,
             commitRef: body.deployment.ref,
             deploymentId: body.deployment.id,
             environment: body.deployment.environment,
-          }),
         };
   
         if (process.env.DEBUG) {
@@ -116,11 +114,11 @@ module.exports = async function (context, request) {
         context.done(null, { status: 200, body: JSON.stringify({ msg: 'Deployment successfully started' }) });
       // this is just a test hook from github
       } else if (body.hook && body.hook.type === 'Repository') {
-        if (await verifyGitSecret(request.headers, request.rawBody, context)) {
+        // if (await verifyGitSecret(request.headers, request.rawBody, context)) {
           context.done(null, { status: 200, body: JSON.stringify({ msg: 'Github test hook received' }) });
-        } else {
-          context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
-        }
+        // } else {
+        //   context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+        // }
         return;
       } else if (body.repository || (body.remoteUrl && body.commitRef && body.environment)) {
         let owner = '';
@@ -132,10 +130,10 @@ module.exports = async function (context, request) {
         // first option is github hook
         if (body.repository) {
           // first let's validate the github signature
-          if (!await verifyGitSecret(request.headers, request.rawBody, context)) {
-            context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
-            return;
-          }
+          // if (!await verifyGitSecret(request.headers, request.rawBody, context)) {
+          //   context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+          //   return;
+          // }
           owner = body.repository.owner.login;
           repo = body.repository.name;
           branch = body.repository.default_branch;

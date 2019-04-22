@@ -39,6 +39,12 @@
       "metadata": {
         "description": "Blob URL for functions"
       }
+    },
+    "deploymentContainerExecRoleId": {
+      "type": "string",
+      "metadata": {
+        "description": "The Deployment Container Exec Role Id"
+      }
     }
   },
   "variables": {
@@ -262,6 +268,19 @@
       ],
       "properties": {
         "value": "[parameters('ApiKey')]"
+      }
+    },
+    {
+      "apiVersion": "2017-09-01",
+      "name": "[guid(resourceGroup().id)]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "dependsOn": [
+          
+      ],
+      "properties": {
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('deploymentContainerExecRoleId'))]",
+        "principalId": "[reference(concat(resourceId('Microsoft.Web/sites/', variables('sites_deploy_name')),'/providers/Microsoft.ManagedIdentity/Identities/default'),'2015-08-31-PREVIEW').principalId]",
+        "scope": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name)]"
       }
     }
   ],

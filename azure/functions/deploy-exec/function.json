@@ -1,1 +1,1 @@
-{"disabled":false,"scriptFile":"index.js","bindings":[{"type":"eventHubTrigger","direction":"in","name":"eventInput","eventHubName":"furnacerg-deployHub","connection":"eventPullConnectionString"},{"type":"http","direction":"out","name":"$return"}]}
+{"disabled":false,"scriptFile":"index.js","bindings":[{"type":"eventHubTrigger","direction":"in","name":"eventInput","eventHubName":"feasterrg-deployHub","connection":"eventPullConnectionString"},{"type":"http","direction":"out","name":"$return"}]}
