@@ -117,7 +117,7 @@ module.exports = async function (context, request) {
         // if (await verifyGitSecret(request.headers, request.rawBody, context)) {
           context.done(null, { status: 200, body: JSON.stringify({ msg: 'Github test hook received' }) });
         // } else {
-        //   context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+          // context.done(null, { status: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
         // }
         return;
       } else if (body.repository || (body.remoteUrl && body.commitRef && body.environment)) {
