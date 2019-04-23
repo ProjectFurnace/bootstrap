@@ -165,6 +165,8 @@
           "FUNCTIONS_WORKER_RUNTIME": "node",
           "DEBUG": "1",
           "FURNACE_INSTANCE": "[resourceGroup().name]",
+          "PLATFORM": "azure",
+          "BUILD_BUCKET": "[parameters('containerName')]",
           "WEBSITE_RUN_FROM_PACKAGE": "[parameters('blobUrl')]",
           "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
           "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components/', variables('sites_deploy_name')), '2015-05-01').InstrumentationKey]",
