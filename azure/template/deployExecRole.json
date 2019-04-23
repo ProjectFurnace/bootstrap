@@ -24,7 +24,8 @@
         "permissions": [
           {
             "actions": [
-              "Microsoft.ContainerInstance/containerGroups/write"
+              "Microsoft.ContainerInstance/containerGroups/write",
+              "Microsoft.ManagedIdentity/userAssignedIdentities/assign/action"
             ],
             "notActions": []
           }
