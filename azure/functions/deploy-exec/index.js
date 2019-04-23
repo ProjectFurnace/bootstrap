@@ -50,11 +50,13 @@ module.exports = async function process(context, eventInput) {
             environmentVariables: [
               { name: "GIT_REMOTE", value: eventInput.remoteUrl },
               { name: "GIT_TAG", value: eventInput.commitRef },
-              { name: "GIT_TOKEN", value: process.env.GIT_TOKEN || eventInput.gitToken },
               { name: "GIT_USERNAME", value: "unset" },
-              { name: "ENVIRONMENT", value: "test" },
+              { name: "STACK_ENV", value: eventInput.environment },
               { name: "STACK_REGION", value: "WestUS" },
               { name: "ARM_USE_MSI", value: "true" },
+              { name: "DEPLOYMENT_ID", value: eventInput.deploymentId.toString() },
+              { name: "PLATFORM", value: process.env.PLATFORM },
+              { name: "BUILD_BUCKET", value: process.env.BUILD_BUCKET },
               { name: "FURNACE_INSTANCE", value: process.env.FURNACE_INSTANCE }
             ],
             image: eventInput.image || "dannywaite/deploy:latest",
