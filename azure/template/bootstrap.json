@@ -166,6 +166,7 @@
           "DEBUG": "1",
           "FURNACE_INSTANCE": "[resourceGroup().name]",
           "PLATFORM": "azure",
+          "STORAGE_CONNECTION_STRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2015-05-01-preview').key1)]",
           "BUILD_BUCKET": "[parameters('containerName')]",
           "WEBSITE_RUN_FROM_PACKAGE": "[parameters('blobUrl')]",
           "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
