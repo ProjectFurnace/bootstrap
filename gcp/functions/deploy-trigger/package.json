@@ -1,0 +1,26 @@
+{
+  "name": "@project-furnace/gcp-deploy-trigger",
+  "version": "0.1.0",
+  "description": "Furnace gcp function to trigger deployments",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "yamljs": "^0.3.0",
+    "@google-cloud/pubsub": "^0.28.1"
+  },
+  "devDependencies": {
+    "jest": "^23.6.0"
+  },
+  "keywords": [
+    "deploy-trigger",
+    "furnace",
+    "functions",
+    "gcp",
+    "google"
+  ],
+  "author": "Guillem Mateos <guillem.mateos@furnace.org>",
+  "license": "Apache-2.0",
+  "homepage": "https://furnace.org"
+}

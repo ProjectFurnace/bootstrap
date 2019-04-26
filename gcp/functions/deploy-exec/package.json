@@ -1,11 +1,9 @@
 {
-  "name": "@project-furnace/azure-exec-trigger",
+  "name": "@project-furnace/gcp-deploy-exec",
   "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "axios": "^0.18.0",
-    "ms-rest-azure": "^2.6.0"
   },
   "devDependencies": {},
   "scripts": {
@@ -18,7 +16,7 @@
     "gcp",
     "google"
   ],
-  "author": "Danny Waite <danny.waite@furnace.org>",
+  "author": "Guillem Mateos <guillem.mateos@furnace.org>",
   "license": "Apache-2.0",
   "homepage": "https://furnace.org"
 }

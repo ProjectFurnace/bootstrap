@@ -1,9 +1,7 @@
-const MsRest = require('ms-rest-azure')
-    , axios = require("axios")
-    , util = require("util")
+const util = require("util")
     ;
 
-module.exports = async function (context, eventInput) {
+exports.handler = async (context, eventInput) => {
   context.log("got event", eventInput);
 
   if (!eventInput.remoteUrl || !eventInput.commitRef) {

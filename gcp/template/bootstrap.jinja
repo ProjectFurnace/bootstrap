@@ -1,0 +1,64 @@
+{% set PROJECT = "furnace-scratch" %}
+{% set CLUSTER = "test" %}
+{% set LOCATION = "europe-west1" %}
+{% set BOOTSTRAP_BUCKET_NAME = "furnace-bootstrap-bucket" %}
+{% set ARTIFACT_BUCKET_NAME = "furnace-artifact" %}
+
+resources:
+- type: storage.v1.bucket
+  name: {{ ARTIFACT_BUCKET_NAME }}
+  properties:
+    project: {{ PROJECT }}-{{ CLUSTER }}
+    name: {{ ARTIFACT_BUCKET_NAME }}
+
+- name: deploy-topic
+  type: pubsub.v1.topic
+  #type: gcp-types/pubsub-v1:projects.topics
+  properties:
+    topic: deploy
+
+- name: deploy-subscription
+  type: pubsub.v1.subscription
+  #type: gcp-types/pubsub-v1:projects.subscriptions
+  properties:
+    subscription: deploy-subscription
+    topic: $(ref.deploy-topic.name)
+
+- name: deploy-trigger
+  type: 'gcp-types/cloudfunctions-v1:projects.locations.functions'
+  properties:
+    parent: projects/{{ PROJECT }}/locations/{{ LOCATION }}
+    function: deploy-trigger
+    labels:
+      # Add the hash of the contents to trigger an update if the bucket
+      # object changes
+      content-md5: "1234"
+    sourceArchiveUrl: gs://{{ BOOTSTRAP_BUCKET_NAME }}/deploy-trigger.zip
+    entryPoint: handler
+    timeout: "500s"
+    runtime: "nodejs8"
+    httpsTrigger:
+      url: hook
+    availableMemoryMb: 128
+
+- name: deploy-exec
+  type: 'gcp-types/cloudfunctions-v1:projects.locations.functions'
+  properties:
+    parent: projects/{{ PROJECT }}/locations/{{ LOCATION }}
+    function: deploy-exec
+    labels:
+      # Add the hash of the contents to trigger an update if the bucket
+      # object changes
+      content-md5: "1234"
+    sourceArchiveUrl: gs://{{ BOOTSTRAP_BUCKET_NAME }}/deploy-exec.zip
+    environmentVariables:
+      FURNACE_INSTANCE: {{ PROJECT }},
+      PLATFORM: "gcp"
+      BUILD_BUCKET: {{ ARTIFACT_BUCKET_NAME }}
+    entryPoint: handler
+    timeout: "500s"
+    runtime: "nodejs8"
+    availableMemoryMb: 128
+    eventTrigger:
+      resource: $(ref.deploy-topic.name)
+      eventType: providers/cloud.pubsub/eventTypes/topic.publish
