@@ -45,17 +45,12 @@ async function getSecret(name) {
   return file.get().then((data) => {
     if (process.env.DEBUG)
       console.log('Got secret file from bucket');
-    //return resolve( data[0] );
 
-    // The location of the crypto key's key ring, e.g. "global"
-    const locationId = 'global';
-
-    // Reads the file to be decrypted
-    const name = kmsClient.cryptoKeyPath(
-      projectId,
-      locationId,
-      keyRingId,
-      cryptoKeyId
+    const name = client.cryptoKeyPath(
+      process.env.PROJECT_ID,
+      process.env.LOCATION,
+      `${process.env.PROJECT}-${process.env.CLUSTER}-secrets-key-ring`,
+      `${process.env.PROJECT}-${process.env.CLUSTER}-secrets-key`
     );
 
     // Decrypts the file using the specified crypto key
@@ -67,20 +62,6 @@ async function getSecret(name) {
     return reject(err);
   })
 }
-
-// The location of the crypto key's key ring, e.g. "global"
-const locationId = 'global';
-
-// Reads the file to be decrypted
-const name = client.cryptoKeyPath(
-  process.env.PROJECT_ID,
-  process.env.LOCATION,
-  `${process.env.PROJECT}-${process.env.CLUSTER}-secrets-key-ring`,
-  `${process.env.PROJECT}-${process.env.CLUSTER}-secrets-key`
-);
-
-// Decrypts the file using the specified crypto key
-const [result] = await client.decrypt({name, ciphertext});
 
 // Verification function to check if it is actually GitHub who is POSTing here
 async function verifyGitSecret(headers, stringBody) {
