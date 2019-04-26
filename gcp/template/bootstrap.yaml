@@ -4,3 +4,7 @@ imports:
 resources:
 - name: bootstrap
   type: bootstrap.jinja
+
+outputs:
+- name: callbackUrl
+  value: $(ref.bootstrap.callbackUrl)
