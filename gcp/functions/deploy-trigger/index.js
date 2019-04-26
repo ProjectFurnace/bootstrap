@@ -2,8 +2,13 @@ const https = require('https');
 const crypto = require('crypto');
 const yaml = require('yamljs');
 const {PubSub} = require('@google-cloud/pubsub');
+const {Storage} = require('@google-cloud/storage');
+const kms = require('@google-cloud/kms');
 
 const pubsub = new PubSub();
+const storage = new Storage();
+const kmsClient = new kms.KeyManagementServiceClient();
+const secretBucket = storage.bucket(process.env.SECRETS_BUCKET_NAME);
 
 // Do HTTPS request
 function doRequest(options, postData) {
@@ -33,18 +38,49 @@ function doRequest(options, postData) {
 }
 
 // Retrieve a secret from Key Vault
-function getSecret(name) {
-  return msRestAzure.loginWithAppServiceMSI({resource: 'https://vault.azure.net'}).then(credentials => {
+async function getSecret(name) {
+
+  const file = secretBucket.file(name);
+
+  return file.get().then((data) => {
     if (process.env.DEBUG)
-      console.log('Got credentials for azure');
-    const client = new KeyVault.KeyVaultClient(credentials);
-    return client.getSecret('https://'.concat(process.env.FURNACE_INSTANCE, '-vault.vault.azure.net'), name, '');
+      console.log('Got secret file from bucket');
+    //return resolve( data[0] );
+
+    // The location of the crypto key's key ring, e.g. "global"
+    const locationId = 'global';
+
+    // Reads the file to be decrypted
+    const name = kmsClient.cryptoKeyPath(
+      projectId,
+      locationId,
+      keyRingId,
+      cryptoKeyId
+    );
+
+    // Decrypts the file using the specified crypto key
+    const [result] = await kmsClient.decrypt({name, ciphertext: data[0]});
+    resolve( result.plaintext );
   }).catch(err => {
     if (process.env.DEBUG)
       console.log('Error retrieving secret', err);
     return reject(err);
-  });
+  })
 }
+
+// The location of the crypto key's key ring, e.g. "global"
+const locationId = 'global';
+
+// Reads the file to be decrypted
+const name = client.cryptoKeyPath(
+  process.env.PROJECT_ID,
+  process.env.LOCATION,
+  `${process.env.PROJECT}-${process.env.CLUSTER}-secrets-key-ring`,
+  `${process.env.PROJECT}-${process.env.CLUSTER}-secrets-key`
+);
+
+// Decrypts the file using the specified crypto key
+const [result] = await client.decrypt({name, ciphertext});
 
 // Verification function to check if it is actually GitHub who is POSTing here
 async function verifyGitSecret(headers, stringBody) {
@@ -111,7 +147,7 @@ exports.handler = async (request, response) => {
         const dataBuffer = Buffer.from(JSON.stringify(event), 'utf-8');
 
         // Publishes the message and prints the messageID on console
-        const messageId = pubsub.topic(topicName).publish(dataBuffer);
+        const messageId = pubsub.topic(`${process.env.PROJECT}-${process.env.CLUSTER}-deploy`).publish(dataBuffer);
 
         if (messageId) {
           // eslint-disable-next-line no-console
