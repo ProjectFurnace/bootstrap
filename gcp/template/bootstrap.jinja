@@ -1,67 +1,70 @@
-{% set PROJECT = "fscratch" %}
-{% set CLUSTER = "test" %}
-{% set LOCATION = "europe-west1" %}
-{% set BOOTSTRAP_BUCKET_NAME = "furnace-bootstrap-bucket" %}
-{% set ARTIFACT_BUCKET_NAME = "artifact" %}
-{% set SECRETS_BUCKET_NAME = "secrets" %}
-{% set RAND = "1234" %}
+{% set PROJECT = env["project"] %}
+{% set CLUSTER = env["deployment"] %}
+{% set LOCATION = env["location"] %}
+{% set BOOTSTRAP_BUCKET_NAME = env["bootstrap_bucket"] %}
+{% set ARTIFACT_BUCKET_NAME = env["artifact_bucket"] %}
+{% set SECRETS_BUCKET_NAME = env["secrets_bucket"] %}
+{% set RAND = env["rand"] %}
 
 resources:
 - type: 'gcp-types/cloudkms-v1:projects.locations.keyRings'
   name: {{ PROJECT }}-{{ CLUSTER }}-secretsKeyRing-{{ RAND }}
   properties:
     parent: projects/{{ PROJECT }}/locations/{{ LOCATION }}
-    keyRingId: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-ring
+    keyRingId: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-ring-{{ RAND }}
 
 - type: 'gcp-types/cloudkms-v1:projects.locations.keyRings.cryptoKeys'
-  name: {{ PROJECT }}-{{ CLUSTER }}-secretsKey
+  name: {{ PROJECT }}-{{ CLUSTER }}-secretsKey-{{ RAND }}
   properties:
     parent: $(ref.{{ PROJECT }}-{{ CLUSTER }}-secretsKeyRing-{{ RAND }}.name)
-    cryptoKeyId: {{ PROJECT }}-{{ CLUSTER }}-secrets-key
+    cryptoKeyId: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-{{ RAND }}
     purpose: 'ENCRYPT_DECRYPT'
+  accessControl:
+    gcpIamPolicy:
+      bindings:
+      - role: roles/cloudkms.cryptoKeyDecrypter
+        members:
+        - serviceAccount:$(ref.{{ CLUSTER }}-deploy-trigger.serviceAccountEmail)
 
 - type: gcp-types/storage-v1:buckets
-  name: {{ PROJECT }}-{{ CLUSTER }}-{{ ARTIFACT_BUCKET_NAME }}
+  name: {{ ARTIFACT_BUCKET_NAME }}
   properties:
     project: {{ PROJECT }}
-    name: {{ PROJECT }}-{{ CLUSTER }}-{{ ARTIFACT_BUCKET_NAME }}
+    name: {{ ARTIFACT_BUCKET_NAME }}
 
 - type: gcp-types/storage-v1:buckets
-  name: {{ PROJECT }}-{{ CLUSTER }}-{{ SECRETS_BUCKET_NAME }}
+  name: {{ SECRETS_BUCKET_NAME }}
   properties:
     project: {{ PROJECT }}
-    name: {{ PROJECT }}-{{ CLUSTER }}-{{ SECRETS_BUCKET_NAME }}
+    name: {{ SECRETS_BUCKET_NAME }}
 #    encryption:
 #      defaultKmsKeyName: {{ PROJECT }}-{{ CLUSTER }}-secretsKey
 
 - type: gcp-types/pubsub-v1:projects.topics
-  name: {{ PROJECT }}-{{ CLUSTER }}-deploy
+  name: {{ CLUSTER }}-deploy
   properties:
-    topic: deploy
+    topic: {{ CLUSTER }}-deploy
 
-- name: deploy-subscription
-  type: pubsub.v1.subscription
-  #type: gcp-types/pubsub-v1:projects.subscriptions
+- type: gcp-types/pubsub-v1:projects.subscriptions
+  name: {{ CLUSTER }}-deploy-subscription
   properties:
-    subscription: deploy-subscription
-    topic: $(ref.{{ PROJECT }}-{{ CLUSTER }}-deploy.name)
+    subscription: {{ CLUSTER }}-deploy-subscription
+    topic: $(ref.{{ CLUSTER }}-deploy.name)
 
-- name: deploy-trigger
+- name: {{ CLUSTER }}-deploy-trigger
   type: 'gcp-types/cloudfunctions-v1:projects.locations.functions'
   properties:
     parent: projects/{{ PROJECT }}/locations/{{ LOCATION }}
-    function: deploy-trigger
+    function: {{ CLUSTER }}-deploy-trigger
     environmentVariables:
       PROJECT: {{ PROJECT }}
       PROJECT_ID: {{ env['project'] }}
       CLUSTER: {{ CLUSTER }}
       LOCATION: {{ LOCATION }}
-      SECRETS_BUCKET_NAME: {{ PROJECT }}-{{ CLUSTER }}-{{ SECRETS_BUCKET_NAME }}
-    labels:
-      # Add the hash of the contents to trigger an update if the bucket
-      # object changes
-      content-md5: "1234"
-    sourceArchiveUrl: gs://{{ PROJECT }}-{{ CLUSTER }}-{{ BOOTSTRAP_BUCKET_NAME }}/deploy-trigger.zip
+      SECRETS_BUCKET_NAME: {{ SECRETS_BUCKET_NAME }}
+      KEYRING_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-ring-{{ RAND }}
+      CRYPTOKEY_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-{{ RAND }}
+    sourceArchiveUrl: gs://{{ BOOTSTRAP_BUCKET_NAME }}/deploy-trigger
     entryPoint: handler
     timeout: "500s"
     runtime: "nodejs8"
@@ -69,28 +72,31 @@ resources:
       url: hook
     availableMemoryMb: 128
 
-- name: deploy-exec
+- name: {{ CLUSTER }}-deploy-exec
   type: 'gcp-types/cloudfunctions-v1:projects.locations.functions'
   properties:
     parent: projects/{{ PROJECT }}/locations/{{ LOCATION }}
-    function: deploy-exec
-    labels:
-      # Add the hash of the contents to trigger an update if the bucket
-      # object changes
-      content-md5: "1234"
-    sourceArchiveUrl: gs://{{ PROJECT }}-{{ CLUSTER }}-{{ BOOTSTRAP_BUCKET_NAME }}/deploy-exec.zip
+    function: {{ CLUSTER }}-deploy-exec
+    sourceArchiveUrl: gs://{{ BOOTSTRAP_BUCKET_NAME }}/deploy-exec
     environmentVariables:
-      FURNACE_INSTANCE: {{ PROJECT }},
+      FURNACE_INSTANCE: {{ PROJECT }}
+      PROJECT: {{ PROJECT }}
+      PROJECT_ID: {{ env['project'] }}
+      LOCATION: {{ LOCATION }}
+      SECRETS_BUCKET_NAME: {{ SECRETS_BUCKET_NAME }}
+      KEYRING_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-ring-{{ RAND }}
+      CRYPTOKEY_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-{{ RAND }}
       PLATFORM: "gcp"
       BUILD_BUCKET: {{ ARTIFACT_BUCKET_NAME }}
+      GIT_USERNAME: "unknown"
     entryPoint: handler
     timeout: "500s"
     runtime: "nodejs8"
-    availableMemoryMb: 128
+    availableMemoryMb: 512
     eventTrigger:
-      resource: $(ref.{{ PROJECT }}-{{ CLUSTER }}-deploy.name)
+      resource: $(ref.{{ CLUSTER }}-deploy.name)
       eventType: providers/cloud.pubsub/eventTypes/topic.publish
 
 outputs:
-- name: callbackUrl
-  value: $(ref.deploy-trigger.httpsTrigger.url)
+- name: apiUrl
+  value: $(ref.{{ CLUSTER }}-deploy-trigger.httpsTrigger.url)

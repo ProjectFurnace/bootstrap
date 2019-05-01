@@ -4,6 +4,13 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "targz": "^1.0.1",
+    "randomstring": "^1.1.5",
+    "@project-furnace/fsutils": "^0.1.6",
+    "@project-furnace/gitutils": "^0.1.4",
+    "googleapis": "^39.2.0",
+    "@google-cloud/kms": "^0.4.0",
+    "@google-cloud/storage": "^2.5.0"
   },
   "devDependencies": {},
   "scripts": {
