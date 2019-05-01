@@ -6,5 +6,5 @@ resources:
   type: bootstrap.jinja
 
 outputs:
-- name: callbackUrl
-  value: $(ref.bootstrap.callbackUrl)
+- name: apiUrl
+  value: $(ref.bootstrap.apiUrl)

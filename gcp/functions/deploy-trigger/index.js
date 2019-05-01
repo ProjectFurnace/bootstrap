@@ -37,30 +37,48 @@ function doRequest(options, postData) {
   });
 }
 
+// Read file
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const fileReader = file.createReadStream();
+    const buffers = [];
+    fileReader.on('data', function(data) {
+      buffers.push(data);
+    }).on('end', function() {
+      resolve(Buffer.concat(buffers));
+    }).on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
 // Retrieve a secret from Key Vault
 async function getSecret(name) {
 
   const file = secretBucket.file(name);
 
-  return file.get().then((data) => {
+  try {
     if (process.env.DEBUG)
-      console.log('Got secret file from bucket');
+      console.log(`Got secret file from bucket ${name}`);
 
-    const name = client.cryptoKeyPath(
+    const cryptoname = kmsClient.cryptoKeyPath(
       process.env.PROJECT_ID,
       process.env.LOCATION,
-      `${process.env.PROJECT}-${process.env.CLUSTER}-secrets-key-ring`,
-      `${process.env.PROJECT}-${process.env.CLUSTER}-secrets-key`
+      process.env.KEYRING_ID,
+      process.env.CRYPTOKEY_ID
     );
 
+    const fileContents = await readFile(file);
+
     // Decrypts the file using the specified crypto key
-    const [result] = await kmsClient.decrypt({name, ciphertext: data[0]});
-    resolve( result.plaintext );
-  }).catch(err => {
+    //const b64secret = Buffer.from(fileContents).toString('base64');
+    const [result] = await kmsClient.decrypt({name: cryptoname, ciphertext: Buffer.from(fileContents)});
+    return Buffer.from(result.plaintext, 'base64').toString('utf8').trim();
+  } catch(err) {
     if (process.env.DEBUG)
       console.log('Error retrieving secret', err);
-    return reject(err);
-  })
+    return false;
+  }
 }
 
 // Verification function to check if it is actually GitHub who is POSTing here
@@ -72,9 +90,9 @@ async function verifyGitSecret(headers, stringBody) {
   if (headers['x-hub-signature']) {
     // Get secret from secret store
     const gitSecret = await getSecret('GitHookSecret');
-    if (gitSecret.value) {
+    if (gitSecret) {
       try {
-        const signature = `sha1=${crypto.createHmac('sha1', gitSecret.value).update(stringBody).digest('hex')}`;
+        const signature = `sha1=${crypto.createHmac('sha1', gitSecret).update(stringBody).digest('hex')}`;
         return crypto.timingSafeEqual(Buffer.from(headers['x-hub-signature']), Buffer.from(signature));
       } catch (e) {
         return false;
@@ -93,7 +111,7 @@ async function verifyApiKey(headers) {
   if (headers['x-api-key']) {
     // Get secret from secret store
     const apiKey = await getSecret('ApiKey');
-    if (apiKey.value === headers['x-api-key']) {
+    if (apiKey === headers['x-api-key']) {
       return true;
     }
   }
@@ -104,7 +122,8 @@ exports.handler = async (request, response) => {
     // if debug is enabled, show the full received request
     if (process.env.DEBUG) {
       // eslint-disable-next-line no-console
-      console.log(request);
+      console.log(request.body);
+      console.log(request.headers);
     }
     // check if we have body property for the received request
     if (request.body != null) {
@@ -125,18 +144,18 @@ exports.handler = async (request, response) => {
             environment: body.deployment.environment,
         };
   
-        const dataBuffer = Buffer.from(JSON.stringify(event), 'utf-8');
+        //const dataBuffer = Buffer.from(JSON.stringify(event), 'utf-8');
 
         // Publishes the message and prints the messageID on console
-        const messageId = pubsub.topic(`${process.env.PROJECT}-${process.env.CLUSTER}-deploy`).publish(dataBuffer);
-
-        if (messageId) {
-          // eslint-disable-next-line no-console
+        try {
+          const messageId = await pubsub.topic(`${process.env.CLUSTER}-deploy`).publishJSON(event);
           if (process.env.DEBUG)
             console.log(`Message ${messageId} published`);
           response.status(200).send(JSON.stringify({ msg: 'Deployment successfully started' }));
-        } else {
-          response.status(500).send(JSON.stringify({ error: 'Something went wrong...' }));
+        } catch(e) {
+          if (process.env.DEBUG)
+            console.log(e);
+          response.status(500).send(JSON.stringify({ error: 'Hook execution failed' }));
         }
       // this is just a test hook from github
       } else if (body.hook && body.hook.type === 'Repository') {
@@ -188,8 +207,8 @@ exports.handler = async (request, response) => {
   
         try {
           gitToken = await getSecret('GitToken');
-          if (gitToken.value) {
-            stackYamlOptions.headers.Authorization = 'token '.concat(gitToken.value);
+          if (gitToken) {
+            stackYamlOptions.headers.Authorization = 'token '.concat(gitToken);
           }
         } catch (e) {
           if (process.env.DEBUG) {
@@ -204,39 +223,51 @@ exports.handler = async (request, response) => {
         }
   
         // parse stack.yaml file
-        const stackYaml = await doRequest(stackYamlOptions);
-        const stack = yaml.parse(stackYaml);
-        const { environments } = stack;
-  
-        if (environments) {
-          const deploymentData = { owner, repo, ref: 'master' };
-  
-          deploymentData.environment = (body.repository ? environments[0] : body.environment);
-  
-          const postData = JSON.stringify(deploymentData);
-  
-          const deploymentOptions = {
-            host: 'api.github.com',
-            // eslint-disable-next-line prefer-template
-            path: '/repos/' + owner + '/' + repo + '/deployments',
-            method: 'POST',
-            headers: {
-              Accept: 'application/vnd.github.v3+json',
-              'Content-type': 'application/json',
-              'Content-Length': postData.length,
-              'User-Agent': 'Project Furnace',
-            },
-          };
-  
-          if (gitToken.value) {
-            deploymentOptions.headers.Authorization = 'Bearer '.concat(gitToken.value);
+        try {
+          const stackYaml = await doRequest(stackYamlOptions);
+          const stack = yaml.parse(stackYaml);
+          const { environments } = stack;
+    
+          if (environments) {
+            const deploymentData = { owner, repo, ref: 'master' };
+    
+            deploymentData.environment = (body.repository ? environments[0] : body.environment);
+    
+            const postData = JSON.stringify(deploymentData);
+    
+            const deploymentOptions = {
+              host: 'api.github.com',
+              // eslint-disable-next-line prefer-template
+              path: '/repos/' + owner + '/' + repo + '/deployments',
+              method: 'POST',
+              headers: {
+                Accept: 'application/vnd.github.v3+json',
+                'Content-type': 'application/json',
+                'Content-Length': postData.length,
+                'User-Agent': 'Project Furnace',
+              },
+            };
+    
+            if (gitToken) {
+              deploymentOptions.headers.Authorization = 'Bearer '.concat(gitToken);
+            }
+
+            if (process.env.DEBUG) {
+              // eslint-disable-next-line no-console
+              console.log(deploymentOptions);
+            }
+    
+            await doRequest(deploymentOptions, postData);
+    
+            response.status(200).send(JSON.stringify({ msg: 'Deployment successfully triggered' }));
           }
-  
-          await doRequest(deploymentOptions, postData);
-  
-          response.status(200).send(JSON.stringify({ msg: 'Deployment successfully triggered' }));
+        } catch(e) {
+          if (process.env.DEBUG)
+            console.log(e);
+          response.status(500).send(JSON.stringify({ error: 'Hook execution failed' }));
         }
+      } else {
+        response.status(422).send(JSON.stringify({ error: 'Request is missing some parameter' }));
       }
-      response.status(422).send(JSON.stringify({ error: 'Request is missing some parameter' }));
     }
 };
