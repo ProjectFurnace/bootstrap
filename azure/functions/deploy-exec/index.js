@@ -25,9 +25,9 @@ module.exports = async function (context, eventInput) {
   }
 
   const accessToken = tokenResult.data.access_token
-      , subscriptionId = "836eaf85-82b8-4c2d-a4d1-2082104c7362"
-      , resourceGroupName = "feasterrg"
-      , containerGroupName = "dannytest1"
+      , subscriptionId = process.env.SUBSCRIPTION_ID
+      , resourceGroupName = process.env.FURNACE_INSTANCE
+      , containerGroupName = `${process.env.FURNACE_INSTANCE}Deploy`
       , containerUrl = `/resourceGroups/${resourceGroupName}/providers/Microsoft.ContainerInstance/containerGroups/${containerGroupName}?api-version=2018-10-01`
       , identityName = "FurnaceDeployUserIdentity"
       , userIdArn = `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${identityName}`
@@ -35,7 +35,7 @@ module.exports = async function (context, eventInput) {
 
   const containerGroupDep = {
     type: "Microsoft.ContainerInstance/containerGroups",
-    location: "westus",
+    location: process.env.LOCATION,
     identity: {
       type: "UserAssigned",
       userAssignedIdentities: {
@@ -52,14 +52,14 @@ module.exports = async function (context, eventInput) {
               { name: "GIT_TAG", value: eventInput.commitRef },
               { name: "GIT_USERNAME", value: "unset" },
               { name: "STACK_ENV", value: eventInput.environment },
-              { name: "STACK_REGION", value: "WestUS" },
+              { name: "STACK_REGION", value: process.env.LOCATION },
               { name: "ARM_USE_MSI", value: "true" },
               { name: "DEPLOYMENT_ID", value: eventInput.deploymentId.toString() },
               { name: "PLATFORM", value: process.env.PLATFORM },
               { name: "BUILD_BUCKET", value: process.env.BUILD_BUCKET },
               { name: "FURNACE_INSTANCE", value: process.env.FURNACE_INSTANCE }
             ],
-            image: eventInput.image || "dannywaite/deploy:latest",
+            image: process.env.DEPLOY_IMAGE || "guillemmateos/deploy-azure:latest",
             resources: {
               requests: {
                 memoryInGB: "1.5",
@@ -69,7 +69,6 @@ module.exports = async function (context, eventInput) {
           }
         }
       ],
-      imageRegistryCredentials: [],
       osType: "Linux",
       volumes: [],
       restartPolicy: "Never"

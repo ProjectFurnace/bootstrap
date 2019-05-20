@@ -65,13 +65,14 @@ exports.handler = async (inputEvent, callback) => {
             "FURNACE_LOCAL=1",
             "REPO_DIR=/workspace",
             "TEMPLATE_REPO_DIR=/app/test/fixtures/templates",
-            "STACK_ENV=test",
+            "STACK_ENV=".concat(event.environment),
             "STACK_REGION=".concat(process.env.LOCATION),
             "DEPLOYMENT_ID=".concat(event.deploymentId.toString()),
             "PLATFORM=".concat(process.env.PLATFORM),
             "BUILD_BUCKET=".concat(process.env.BUILD_BUCKET),
             "FURNACE_INSTANCE=".concat(process.env.FURNACE_INSTANCE),
-            "GCP_PROJECT=".concat(process.env.PROJECT_ID)
+            "GCP_PROJECT=".concat(process.env.PROJECT_ID),
+            "SOPS_KMS_ID=".concat(process.env.SOPS_KMS_ID)
           ]
         }
       ]

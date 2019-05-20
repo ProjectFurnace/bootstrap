@@ -34,6 +34,12 @@
         "description": "Storage container name"
       }
     },
+    "principalId": {
+      "type": "string",
+      "metadata": {
+        "description": "The principal for the user identity"
+      }
+    },
     "blobUrl": {
       "type": "string",
       "metadata": {
@@ -165,6 +171,8 @@
           "FUNCTIONS_WORKER_RUNTIME": "node",
           "FURNACE_INSTANCE": "[resourceGroup().name]",
           "PLATFORM": "azure",
+          "LOCATION": "[resourceGroup().location]",
+          "SUBSCRIPTION_ID": "[subscription().subscriptionId]",
           "BUILD_BUCKET": "[parameters('containerName')]",
           "WEBSITE_RUN_FROM_PACKAGE": "[parameters('blobUrl')]",
           "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
@@ -222,6 +230,13 @@
       "properties": {
         "tenantId": "[subscription().tenantId]",
         "accessPolicies": [{
+          "objectId": "[parameters('principalId')]",
+          "tenantId": "[subscription().tenantId]",
+          "permissions": {
+            "keys": ["list","get"],
+            "secrets": ["list","get"]
+          }
+        },{
           "objectId": "[reference(concat('Microsoft.Web/sites/', variables('sites_deploy_name')), '2016-08-01', 'Full').identity.principalId]",
           "tenantId": "[subscription().tenantId]",
           "permissions": {
@@ -288,7 +303,7 @@
       "name": "[guid(resourceGroup().id)]",
       "type": "Microsoft.Authorization/roleAssignments",
       "dependsOn": [
-          
+          "[resourceId('Microsoft.Web/sites/', variables('sites_deploy_name'))]"
       ],
       "properties": {
         "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('deploymentContainerExecRoleId'))]",

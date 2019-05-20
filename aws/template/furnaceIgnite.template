@@ -696,6 +696,16 @@
                                         "Ref": "AWS::StackName"
                                     }, "/*"]]
                                 }
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "kms:Encrypt",
+                                    "kms:Decrypt"
+                                ],
+                                "Resource": {
+                                    "Fn::GetAtt": ["stateKMS", "Arn"]
+                                }
                             }
                         ]
                     }
@@ -822,6 +832,9 @@
                         "PLATFORM": "aws",
                         "FURNACE_INSTANCE": {
                             "Ref": "AWS::StackName"
+                        },
+                        "SOPS_KMS_ARN": {
+                            "Fn::GetAtt": ["stateKMS", "Arn"]
                         }
                     }
                 },
@@ -1159,6 +1172,26 @@
                 "FunctionName": {
                     "Fn::GetAtt": ["deployExecLambda", "Arn"]
                 }
+            }
+        },
+        "stateKMS" : {
+            "Type" : "AWS::KMS::Key",
+            "Properties" : {
+              "Description" : {"Ref": "AWS::StackName"},
+              "KeyPolicy" : {
+                "Version": "2012-10-17",
+                "Id": "key-default-1",
+                "Statement": [
+                  {
+                    "Sid": "Enable IAM User Permissions",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": {"Fn::Join": [":", ["arn:aws:iam:", {
+                        "Ref": "AWS::AccountId"
+                    }, "root"]]}},
+                    "Action": "kms:*",
+                    "Resource": "*"
+                  }]
+              }
             }
         },
         "npmTokenSecret": {

@@ -8,16 +8,29 @@
 
 resources:
 - type: 'gcp-types/cloudkms-v1:projects.locations.keyRings'
-  name: {{ PROJECT }}-{{ CLUSTER }}-secretsKeyRing-{{ RAND }}
+  name: {{ PROJECT }}-{{ CLUSTER }}-KeyRing-{{ RAND }}
   properties:
     parent: projects/{{ PROJECT }}/locations/{{ LOCATION }}
-    keyRingId: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-ring-{{ RAND }}
+    keyRingId: {{ PROJECT }}-{{ CLUSTER }}-key-ring-{{ RAND }}
 
 - type: 'gcp-types/cloudkms-v1:projects.locations.keyRings.cryptoKeys'
   name: {{ PROJECT }}-{{ CLUSTER }}-secretsKey-{{ RAND }}
   properties:
-    parent: $(ref.{{ PROJECT }}-{{ CLUSTER }}-secretsKeyRing-{{ RAND }}.name)
+    parent: $(ref.{{ PROJECT }}-{{ CLUSTER }}-KeyRing-{{ RAND }}.name)
     cryptoKeyId: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-{{ RAND }}
+    purpose: 'ENCRYPT_DECRYPT'
+  accessControl:
+    gcpIamPolicy:
+      bindings:
+      - role: roles/cloudkms.cryptoKeyDecrypter
+        members:
+        - serviceAccount:$(ref.{{ CLUSTER }}-deploy-trigger.serviceAccountEmail)
+
+- type: 'gcp-types/cloudkms-v1:projects.locations.keyRings.cryptoKeys'
+  name: {{ PROJECT }}-{{ CLUSTER }}-stateKey-{{ RAND }}
+  properties:
+    parent: $(ref.{{ PROJECT }}-{{ CLUSTER }}-KeyRing-{{ RAND }}.name)
+    cryptoKeyId: {{ PROJECT }}-{{ CLUSTER }}-state-key-{{ RAND }}
     purpose: 'ENCRYPT_DECRYPT'
   accessControl:
     gcpIamPolicy:
@@ -62,7 +75,7 @@ resources:
       CLUSTER: {{ CLUSTER }}
       LOCATION: {{ LOCATION }}
       SECRETS_BUCKET_NAME: {{ SECRETS_BUCKET_NAME }}
-      KEYRING_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-ring-{{ RAND }}
+      KEYRING_ID: {{ PROJECT }}-{{ CLUSTER }}-key-ring-{{ RAND }}
       CRYPTOKEY_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-{{ RAND }}
     sourceArchiveUrl: gs://{{ BOOTSTRAP_BUCKET_NAME }}/deploy-trigger
     entryPoint: handler
@@ -84,11 +97,12 @@ resources:
       PROJECT_ID: {{ env['project'] }}
       LOCATION: {{ LOCATION }}
       SECRETS_BUCKET_NAME: {{ SECRETS_BUCKET_NAME }}
-      KEYRING_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-ring-{{ RAND }}
+      KEYRING_ID: {{ PROJECT }}-{{ CLUSTER }}-key-ring-{{ RAND }}
       CRYPTOKEY_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-{{ RAND }}
       PLATFORM: "gcp"
       BUILD_BUCKET: {{ ARTIFACT_BUCKET_NAME }}
       GIT_USERNAME: "unknown"
+      SOPS_KMS_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-{{ RAND }}
     entryPoint: handler
     timeout: "500s"
     runtime: "nodejs8"

@@ -50,6 +50,10 @@ function runECS(event) {
           {
             name: 'BUILD_BUCKET',
             value: process.env.BUILD_BUCKET,
+          },
+          {
+            name: 'SOPS_KMS_ARN',
+            value: process.env.SOPS_KMS_ARN,
           }],
         }],
       },
