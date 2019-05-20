@@ -55,7 +55,7 @@ exports.handler = async (inputEvent, callback) => {
       },
       steps: [
         {
-          name: "dannywaite/deploy-gcp:latest",
+          name: "guillemmateos/deploy-gcp:latest",
           entrypoint: "/bin/bash",
           args: [
             "-c",
@@ -71,8 +71,13 @@ exports.handler = async (inputEvent, callback) => {
             "PLATFORM=".concat(process.env.PLATFORM),
             "BUILD_BUCKET=".concat(process.env.BUILD_BUCKET),
             "FURNACE_INSTANCE=".concat(process.env.FURNACE_INSTANCE),
+            "GIT_REMOTE=".concat(event.remoteUrl),
             "GCP_PROJECT=".concat(process.env.PROJECT_ID),
-            "SOPS_KMS_ID=".concat(process.env.SOPS_KMS_ID)
+            "SOPS_KMS_ID=".concat(process.env.SOPS_KMS_ID),
+            "LOCATION=".concat(process.env.LOCATION),
+            "KEYRING_ID=".concat(process.env.KEYRING_ID),
+            "CRYPTOKEY_ID=".concat(process.env.CRYPTOKEY_ID),
+            "SECRETS_BUCKET_NAME=".concat(process.env.SECRETS_BUCKET_NAME)
           ]
         }
       ]
