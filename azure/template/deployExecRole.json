@@ -4,7 +4,7 @@
   "parameters": {
     "roleDefName": {
       "type": "string",
-      "defaultValue": "[guid(deployment().name)]",
+      "defaultValue": "[guid(deployment().name, 'deployExecRole')]",
       "metadata": {
         "description": "Unique name for the role definiton in the format of a guid - this defaultValue may not be unique"
       }
@@ -15,9 +15,9 @@
     {
       "name": "[parameters('roleDefName')]",
       "type": "Microsoft.Authorization/roleDefinitions",
-      "apiVersion": "2017-05-01",
+      "apiVersion": "2017-09-01",
       "properties": {
-        "roleName": "Furnace Deployment Execution Role",
+        "roleName": "[concat('Furnace Deployment Execution Role (', deployment().name, ')')]",
         "description": "Subscription Level Deployment of a Role Definition",
         "type": "customRole",
         "isCustom": true,
