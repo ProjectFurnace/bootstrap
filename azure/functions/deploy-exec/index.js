@@ -59,7 +59,7 @@ module.exports = async function (context, eventInput) {
               { name: "BUILD_BUCKET", value: process.env.BUILD_BUCKET },
               { name: "FURNACE_INSTANCE", value: process.env.FURNACE_INSTANCE }
             ],
-            image: process.env.DEPLOY_IMAGE || "guillemmateos/deploy-azure:latest",
+            image: process.env.DEPLOY_IMAGE || "projectfurnace/deploy-azure:latest",
             resources: {
               requests: {
                 memoryInGB: "1.5",

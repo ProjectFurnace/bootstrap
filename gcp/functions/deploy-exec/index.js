@@ -55,7 +55,7 @@ exports.handler = async (inputEvent, callback) => {
       },
       steps: [
         {
-          name: "guillemmateos/deploy-gcp:latest",
+          name: "projectfurnace/deploy-gcp:latest",
           entrypoint: "/bin/bash",
           args: [
             "-c",
