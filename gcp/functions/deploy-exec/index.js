@@ -62,9 +62,9 @@ exports.handler = async (inputEvent, callback) => {
             "/app/deploy_gcp_local.sh"
           ],
           env: [
-            "FURNACE_LOCAL=1",
+            //"FURNACE_LOCAL=1",
             "REPO_DIR=/workspace",
-            "TEMPLATE_REPO_DIR=/app/test/fixtures/templates",
+            //"TEMPLATE_REPO_DIR=/app/test/fixtures/templates",
             "STACK_ENV=".concat(event.environment),
             "STACK_REGION=".concat(process.env.LOCATION),
             "DEPLOYMENT_ID=".concat(event.deploymentId.toString()),

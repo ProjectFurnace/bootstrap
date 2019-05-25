@@ -40,6 +40,12 @@
         "description": "The principal for the user identity"
       }
     },
+    "oid": {
+      "type": "string",
+      "metadata": {
+        "description": "The oid for the user creating the stack"
+      }
+    },
     "blobUrl": {
       "type": "string",
       "metadata": {
@@ -206,7 +212,7 @@
         "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', variables('sites_deploy_name'))]": "Resource"
       },
       "properties": {
-        "ApplicationId": "[[variables('sites_deploy_name')]]"
+        "ApplicationId": "[variables('sites_deploy_name')]"
       }
     },
     {
@@ -233,15 +239,23 @@
           "objectId": "[parameters('principalId')]",
           "tenantId": "[subscription().tenantId]",
           "permissions": {
-            "keys": ["list","get"],
+            "keys": ["list","get","encrypt","decrypt"],
             "secrets": ["list","get"]
           }
-        },{
+        },
+        {
           "objectId": "[reference(concat('Microsoft.Web/sites/', variables('sites_deploy_name')), '2016-08-01', 'Full').identity.principalId]",
           "tenantId": "[subscription().tenantId]",
           "permissions": {
-            "keys": ["list","get"],
+            "keys": ["list","get","encrypt","decrypt"],
             "secrets": ["list","get"]
+          }
+        },
+        {
+          "objectId": "[parameters('oid')]",
+          "tenantId": "[subscription().tenantId]",
+          "permissions": {
+            "keys": ["create","update"]
           }
         }],
         "sku": {

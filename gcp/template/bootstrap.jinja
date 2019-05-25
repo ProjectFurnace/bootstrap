@@ -102,7 +102,7 @@ resources:
       PLATFORM: "gcp"
       BUILD_BUCKET: {{ ARTIFACT_BUCKET_NAME }}
       GIT_USERNAME: "unknown"
-      SOPS_KMS_ID: {{ PROJECT }}-{{ CLUSTER }}-secrets-key-{{ RAND }}
+      SOPS_KMS_ID: {{ PROJECT }}-{{ CLUSTER }}-state-key-{{ RAND }}
     entryPoint: handler
     timeout: "500s"
     runtime: "nodejs8"
