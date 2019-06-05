@@ -18,7 +18,7 @@
         },
         "TaskContainerImage": {
             "Type": "String",
-            "Default": "projectfurnace/deploy",
+            "Default": "projectfurnace/deploy-aws:latest",
             "Description": "The docker image to use for the Stack Updater Task"
         },
         "TaskContainerName": {
