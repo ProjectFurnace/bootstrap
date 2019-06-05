@@ -3,7 +3,7 @@
     "Parameters": {
         "ECSInstanceType": {
             "Type": "String",
-            "Default": "t2.micro",
+            "Default": "t3.small",
             "Description": "EC2 instance type to use for ECS Cluster."
         },
         "ClusterName": {
