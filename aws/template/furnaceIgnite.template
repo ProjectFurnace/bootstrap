@@ -491,8 +491,8 @@
                     "Image": {
                         "Ref": "TaskContainerImage"
                     },
-                    "Cpu": "1",
-                    "Memory": "768",
+                    "Cpu": "2",
+                    "Memory": "1792",
                     "Essential": true,
                     "LogConfiguration": {
                         "LogDriver": "awslogs",
