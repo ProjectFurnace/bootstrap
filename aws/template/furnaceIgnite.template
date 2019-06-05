@@ -74,10 +74,10 @@
                 "AMI": "ami-00cf4737e238866a3"
             },
             "us-west-2": {
-                "AMI": "ami-06d87f0156b1d4407"
+                "AMI": "ami-0a9f5be2a016dccad"
             },
             "us-west-1": {
-                "AMI": "ami-0a9f5be2a016dccad"
+                "AMI": "ami-06d87f0156b1d4407"
             },
             "eu-west-3": {
                 "AMI": "ami-07273195833e4f20c"
