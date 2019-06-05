@@ -68,52 +68,61 @@
     "Mappings": {
         "RegionMap": {
             "us-east-2": {
-                "AMI": "ami-0307f7ccf6ea35750"
+                "AMI": "ami-012ca23958772cf72"
             },
             "us-east-1": {
-                "AMI": "ami-045f1b3f87ed83659"
+                "AMI": "ami-00cf4737e238866a3"
             },
             "us-west-2": {
-                "AMI": "ami-01b70aea4161476b7"
+                "AMI": "ami-06d87f0156b1d4407"
             },
             "us-west-1": {
-                "AMI": "ami-0285183bbef6224bd"
+                "AMI": "ami-0a9f5be2a016dccad"
             },
             "eu-west-3": {
-                "AMI": "ami-0f4738fbeb53e6c3a"
+                "AMI": "ami-07273195833e4f20c"
             },
             "eu-west-2": {
-                "AMI": "ami-01bee3897bba49d78"
+                "AMI": "ami-0204aa6a92a54561e"
             },
             "eu-west-1": {
-                "AMI": "ami-0627e141ce928067c"
+                "AMI": "ami-0c5abd45f676aab4f"
             },
             "eu-central-1": {
-                "AMI": "ami-0eaa3baf6969912ba"
+                "AMI": "ami-096a38c97b80cd8ec"
+            },
+            "eu-north-1": {
+                "AMI": "ami-0dddc4daca44e6e99"
             },
             "ap-northeast-2": {
                 "AMI": "ami-00294948a592fc052"
             },
             "ap-northeast-1": {
-                "AMI": "ami-05b296a384694dfa4"
+                "AMI": "ami-0e52aad6ac7733a6a"
             },
             "ap-southeast-2": {
-                "AMI": "ami-02c73ee1100ce3e7a"
+                "AMI": "ami-09475847322e5566f"
             },
             "ap-southeast-1": {
-                "AMI": "ami-050865a806e0dae53"
+                "AMI": "ami-0047bfdb16f1f6781"
             },
             "ca-central-1": {
-                "AMI": "ami-0f552e0a86f08b660"
+                "AMI": "ami-0498c464ec4d2ba83"
             },
             "ap-south-1": {
-                "AMI": "ami-01ef9f6a829ae3956"
+                "AMI": "ami-04322e867758d97a8"
+            },
+            "ap-east-1": {
+                "AMI": "ami-067f4f7124e746edd"
             },
             "sa-east-1": {
-                "AMI": "ami-084b1eee100c102ee"
+                "AMI": "ami-00d851648873aaabc"
             },
             "us-gov-west-1": {
-                "AMI": "ami-1dafcb7c"
+                "AMI": "ami-607c0001"
+            },
+            "us-gov-east-1": {
+                "AMI": "ami-06473be43b0f77600"
             }
         }
     },
