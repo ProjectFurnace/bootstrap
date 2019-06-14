@@ -495,7 +495,6 @@
                     "Memory": "1792",
                     "MountPoints": [
                         {
-                          "ReadOnly": null,
                           "ContainerPath": "/var/run/docker.sock",
                           "SourceVolume": "docker"
                         }
