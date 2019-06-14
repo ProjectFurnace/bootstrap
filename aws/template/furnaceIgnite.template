@@ -524,8 +524,7 @@
                       "Name": "docker",
                       "Host": {
                         "SourcePath": "/var/run/docker.sock"
-                      },
-                      "DockerVolumeConfiguration": null
+                      }
                     }
                 ],
                 "NetworkMode": "bridge",
