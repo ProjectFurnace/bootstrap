@@ -493,6 +493,13 @@
                     },
                     "Cpu": "2",
                     "Memory": "1792",
+                    "MountPoints": [
+                        {
+                          "ReadOnly": null,
+                          "ContainerPath": "/var/run/docker.sock",
+                          "SourceVolume": "docker"
+                        }
+                    ],
                     "Essential": true,
                     "LogConfiguration": {
                         "LogDriver": "awslogs",
@@ -513,6 +520,15 @@
                         }
                     }
                 }],
+                "Volumes": [
+                    {
+                      "Name": "docker",
+                      "Host": {
+                        "SourcePath": "/var/run/docker.sock"
+                      },
+                      "DockerVolumeConfiguration": null
+                    }
+                ],
                 "NetworkMode": "bridge",
                 "Family": {
                     "Fn::Join": ["-", [{
@@ -646,14 +662,19 @@
                                     "lambda:DeleteEventSourceMapping",
                                     "lambda:UpdateEventSourceMapping",
                                     "lambda:GetEventSourceMapping",
-                                    "ec2:DescribeAccountAttributes",
-                                    "ec2:DescribeAddresses",
-                                    "ec2:DescribeAvailabilityZones",
-                                    "ec2:DescribeSecurityGroups",
-                                    "ec2:DescribeSubnets",
-                                    "ec2:DescribeVpcs",
-                                    "ec2:DescribeInternetGateways",
+                                    "ec2:*",
+                                    "ecr:GetAuthorizationToken",
+                                    "ecs:CreateCluster",
+                                    "ecs:CreateService",
+                                    "ecs:DescribeClusters",
+                                    "ecs:DescribeServices",
+                                    "ecs:RegisterTaskDefinition",
+                                    "ecs:DescribeTaskDefinition",
                                     "es:ListDomainNames",
+                                    "logs:CreateLogGroup",
+                                    "logs:DescribeLogGroups",
+                                    "logs:ListTagsLogGroup",
+                                    "logs:PutRetentionPolicy",
                                     "sns:CreateTopic",
                                     "sns:Get*",
                                     "sns:List*",
@@ -719,6 +740,7 @@
                             {
                                 "Effect": "Allow",
                                 "Action": [
+                                    "ecr:DescribeRepositories",
                                     "ecr:GetDownloadUrlForLayer",
                                     "ecr:BatchGetImage",
                                     "ecr:BatchCheckLayerAvailability",
