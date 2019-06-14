@@ -661,6 +661,7 @@
                                     "lambda:UpdateEventSourceMapping",
                                     "lambda:GetEventSourceMapping",
                                     "ec2:*",
+                                    "ecr:CreateRepository",
                                     "ecr:GetAuthorizationToken",
                                     "ecs:CreateCluster",
                                     "ecs:CreateService",
@@ -738,7 +739,6 @@
                             {
                                 "Effect": "Allow",
                                 "Action": [
-                                    "ecr:CreateRepository",
                                     "ecr:DescribeRepositories",
                                     "ecr:GetDownloadUrlForLayer",
                                     "ecr:BatchGetImage",
