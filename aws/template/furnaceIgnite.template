@@ -738,6 +738,7 @@
                             {
                                 "Effect": "Allow",
                                 "Action": [
+                                    "ecr:CreateRepository",
                                     "ecr:DescribeRepositories",
                                     "ecr:GetDownloadUrlForLayer",
                                     "ecr:BatchGetImage",
