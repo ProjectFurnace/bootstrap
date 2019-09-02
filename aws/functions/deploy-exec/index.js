@@ -52,6 +52,10 @@ function runECS(event) {
             value: process.env.BUILD_BUCKET,
           },
           {
+            name: 'FN_TEMPLATES_TAG',
+            value: process.env.FN_TEMPLATES_TAG,
+          },
+          {
             name: 'SOPS_KMS_ARN',
             value: process.env.SOPS_KMS_ARN,
           }],
