@@ -679,6 +679,7 @@
                                     "sns:CreateTopic",
                                     "sns:Get*",
                                     "sns:List*",
+                                    "sqs:ListQueues",
                                     "cloudwatch:Describe*",
                                     "cloudwatch:Get*",
                                     "cloudwatch:List*",
@@ -736,6 +737,21 @@
                                 ],
                                 "Resource": {
                                     "Fn::GetAtt": ["stateKMS", "Arn"]
+                                }
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "sqs:DeleteQueue",
+                                    "sqs:CreateQueue",
+                                    "sqs:SetQueueAttributes"
+                                ],
+                                "Resource": {
+                                    "Fn::Join": [":", ["arn:aws:sqs", {
+                                        "Ref": "AWS::Region"
+                                    }, {
+                                        "Ref": "AWS::AccountId"
+                                    }, "*"]]
                                 }
                             },
                             {
