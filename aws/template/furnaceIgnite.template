@@ -671,6 +671,7 @@
                                     "ecs:DescribeTaskDefinition",
                                     "ecs:RegisterTaskDefinition",
                                     "ecs:UpdateService",
+                                    "events:*",
                                     "es:ListDomainNames",
                                     "logs:CreateLogGroup",
                                     "logs:DescribeLogGroups",
@@ -742,9 +743,7 @@
                             {
                                 "Effect": "Allow",
                                 "Action": [
-                                    "sqs:DeleteQueue",
-                                    "sqs:CreateQueue",
-                                    "sqs:SetQueueAttributes"
+                                    "sqs:*"
                                 ],
                                 "Resource": {
                                     "Fn::Join": [":", ["arn:aws:sqs", {
