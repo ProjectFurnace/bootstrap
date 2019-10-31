@@ -1,30 +1,15 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Parameters": {
-        "ECSInstanceType": {
-            "Type": "String",
-            "Default": "t3.small",
-            "Description": "EC2 instance type to use for ECS Cluster."
-        },
         "ClusterName": {
             "Type": "String",
             "Default": "furnaceIgnite",
             "Description": "The name to use for the ECS Cluster."
         },
-        "TaskName": {
-            "Type": "String",
-            "Default": "stackUpdaterTask",
-            "Description": "The name to use for the stack updater task."
-        },
         "TaskContainerImage": {
             "Type": "String",
             "Default": "projectfurnace/deploy-aws:latest",
             "Description": "The docker image to use for the Stack Updater Task"
-        },
-        "TaskContainerName": {
-            "Type": "String",
-            "Default": "stackUpdater",
-            "Description": "The container name for the Stack Updater Task"
         },
         "BootstrapCodeBucketName": {
             "Type": "String",
@@ -171,378 +156,6 @@
         }
     },
     "Resources": {
-        "furnaceIgniteSecurityGroup": {
-            "Type": "AWS::EC2::SecurityGroup",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "VPC"
-                },
-                "GroupDescription": {
-                    "Fn::Join": ["-", [{
-                        "Ref": "AWS::StackName"
-                    }, "furnaceIgniteSG"]]
-                },
-                "GroupName": {
-                    "Fn::Join": ["-", [{
-                        "Ref": "AWS::StackName"
-                    }, "furnaceIgniteSG"]]
-                },
-                "SecurityGroupIngress": [{
-                        "IpProtocol": "tcp",
-                        "FromPort": "0",
-                        "ToPort": "65535",
-                        "CidrIp": "0.0.0.0/0"
-                    },
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "0",
-                        "ToPort": "65535",
-                        "CidrIpv6": "::/0"
-                    }
-                ]
-            }
-        },
-        "furnaceIgniteECS": {
-            "Type": "AWS::ECS::Cluster",
-            "Properties": {
-                "ClusterName": {
-                    "Fn::Join": ["-", [{
-                        "Ref": "AWS::StackName"
-                    }, {
-                        "Ref": "ClusterName"
-                    }]]
-                }
-            }
-        },
-        "furnaceIgniteInstance": {
-            "Type": "AWS::EC2::Instance",
-            "Properties": {
-                "IamInstanceProfile": {
-                    "Ref": "furnaceIgniteInstanceProfile"
-                },
-                "ImageId": {
-                    "Fn::FindInMap": ["RegionMap", {
-                        "Ref": "AWS::Region"
-                    }, "AMI"]
-                },
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, {
-                            "Ref": "ClusterName"
-                        }]]
-                    }
-                }],
-                "UserData": {
-                    "Fn::Base64": {
-                        "Fn::Join": [
-                            "",
-                            [
-                                "#!/bin/bash\n",
-                                "echo ECS_CLUSTER=",
-                                {
-                                    "Fn::Join": ["-", [{
-                                        "Ref": "AWS::StackName"
-                                    }, {
-                                        "Ref": "ClusterName"
-                                    }]]
-                                },
-                                " >> /etc/ecs/ecs.config\n",
-                                "echo ECS_ENABLE_TASK_IAM_ROLE=true >> /etc/ecs/ecs.config"
-                            ]
-                        ]
-                    }
-                },
-                "InstanceType": {
-                    "Ref": "ECSInstanceType"
-                },
-                "SecurityGroupIds": [{
-                    "Ref": "furnaceIgniteSecurityGroup"
-                }],
-                "SubnetId": {
-                    "Ref": "PrivateSubnet"
-                }
-            }
-        },
-        "furnaceIgniteInstanceProfile": {
-            "Type": "AWS::IAM::InstanceProfile",
-            "Properties": {
-                "Roles": [{
-                    "Ref": "furnaceIgniteRole"
-                }]
-            }
-        },
-        "furnaceIgniteRole": {
-            "Type": "AWS::IAM::Role",
-            "Properties": {
-                "AssumeRolePolicyDocument": {
-                    "Statement": [{
-                        "Effect": "Allow",
-                        "Principal": {
-                            "Service": [
-                                "ec2.amazonaws.com"
-                            ]
-                        },
-                        "Action": [
-                            "sts:AssumeRole"
-                        ]
-                    }]
-                },
-                "Path": "/",
-                "ManagedPolicyArns": [
-                    "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role",
-                    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
-                ]
-            }
-        },
-        "VPC": {
-            "Type": "AWS::EC2::VPC",
-            "Properties": {
-                "CidrBlock": "10.10.0.0/16",
-                "EnableDnsSupport": true,
-                "EnableDnsHostnames": true,
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, "furnaceIgniteVPC"]]
-                    }
-                }]
-            }
-        },
-        "PrivateSubnet": {
-            "Type": "AWS::EC2::Subnet",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "VPC"
-                },
-                "CidrBlock": "10.10.0.0/24",
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, "furnaceIgnitePrivateSubnet"]]
-                    }
-                }]
-            }
-        },
-        "PublicSubnet": {
-            "Type": "AWS::EC2::Subnet",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "VPC"
-                },
-                "CidrBlock": "10.10.1.0/24",
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, "furnaceIgnitePublicSubnet"]]
-                    }
-                }],
-                "MapPublicIpOnLaunch": true
-            }
-        },
-        "PrivateSubnetRouteTableAssociation": {
-            "Type": "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties": {
-                "SubnetId": {
-                    "Ref": "PrivateSubnet"
-                },
-                "RouteTableId": {
-                    "Ref": "PrivateRouteTable"
-                }
-            }
-        },
-        "PublicSubnetRouteTableAssociation": {
-            "Type": "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties": {
-                "SubnetId": {
-                    "Ref": "PublicSubnet"
-                },
-                "RouteTableId": {
-                    "Ref": "PublicRouteTable"
-                }
-            }
-        },
-        "PrivateRouteTable": {
-            "Type": "AWS::EC2::RouteTable",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "VPC"
-                },
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, "furnaceIgnitePrivateRT"]]
-                    }
-                }]
-            }
-        },
-        "PublicRouteTable": {
-            "Type": "AWS::EC2::RouteTable",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "VPC"
-                },
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, "furnaceIgnitePublicRT"]]
-                    }
-                }]
-            }
-        },
-        "InternetGateway": {
-            "Type": "AWS::EC2::InternetGateway",
-            "Properties": {
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, "furnaceIgniteInternetGateway"]]
-                    }
-                }]
-            }
-        },
-        "AttachGateway": {
-            "Type": "AWS::EC2::VPCGatewayAttachment",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "VPC"
-                },
-                "InternetGatewayId": {
-                    "Ref": "InternetGateway"
-                }
-            }
-        },
-        "NATGW": {
-            "DependsOn": [
-                "InternetGateway"
-            ],
-            "Type": "AWS::EC2::NatGateway",
-            "Properties": {
-                "AllocationId": {
-                    "Fn::GetAtt": [
-                        "EIP",
-                        "AllocationId"
-                    ]
-                },
-                "SubnetId": {
-                    "Ref": "PublicSubnet"
-                },
-                "Tags": [{
-                    "Key": "Name",
-                    "Value": {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, "furnaceIgniteNATGw"]]
-                    }
-                }]
-            }
-        },
-        "EIP": {
-            "Type": "AWS::EC2::EIP",
-            "Properties": {
-                "Domain": "vpc"
-            }
-        },
-        "PrivateDefaultRoute": {
-            "Type": "AWS::EC2::Route",
-            "Properties": {
-                "RouteTableId": {
-                    "Ref": "PrivateRouteTable"
-                },
-                "DestinationCidrBlock": "0.0.0.0/0",
-                "NatGatewayId": {
-                    "Ref": "NATGW"
-                }
-            }
-        },
-        "PublicDefaultRoute": {
-            "Type": "AWS::EC2::Route",
-            "Properties": {
-                "RouteTableId": {
-                    "Ref": "PublicRouteTable"
-                },
-                "DestinationCidrBlock": "0.0.0.0/0",
-                "GatewayId": {
-                    "Ref": "InternetGateway"
-                }
-            }
-        },
-        "updateStackTask": {
-            "Type": "AWS::ECS::TaskDefinition",
-            "Properties": {
-                "ContainerDefinitions": [{
-                    "Name": {
-                        "Ref": "TaskContainerName"
-                    },
-                    "Image": {
-                        "Ref": "TaskContainerImage"
-                    },
-                    "Cpu": "2",
-                    "Memory": "1792",
-                    "MountPoints": [
-                        {
-                          "ContainerPath": "/var/run/docker.sock",
-                          "SourceVolume": "docker"
-                        }
-                    ],
-                    "Essential": true,
-                    "LogConfiguration": {
-                        "LogDriver": "awslogs",
-                        "Options": {
-                            "awslogs-group": {
-                                "Fn::Join": ["", ["/ecs/", {
-                                    "Fn::Join": ["-", [{
-                                        "Ref": "AWS::StackName"
-                                    }, {
-                                        "Ref": "TaskName"
-                                    }]]
-                                }]]
-                            },
-                            "awslogs-region": {
-                                "Ref": "AWS::Region"
-                            },
-                            "awslogs-stream-prefix": "ecs"
-                        }
-                    }
-                }],
-                "Volumes": [
-                    {
-                      "Name": "docker",
-                      "Host": {
-                        "SourcePath": "/var/run/docker.sock"
-                      }
-                    }
-                ],
-                "NetworkMode": "bridge",
-                "Family": {
-                    "Fn::Join": ["-", [{
-                        "Ref": "AWS::StackName"
-                    }, {
-                        "Ref": "TaskName"
-                    }]]
-                },
-                "TaskRoleArn": {
-                    "Fn::GetAtt": [
-                        "updateStackTaskRole",
-                        "Arn"
-                    ]
-                }
-            }
-        },
         "updateStackTaskRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
@@ -551,7 +164,7 @@
                         "Effect": "Allow",
                         "Principal": {
                             "Service": [
-                                "ecs-tasks.amazonaws.com"
+                                "codebuild.amazonaws.com"
                             ]
                         },
                         "Action": [
@@ -674,9 +287,11 @@
                                     "events:*",
                                     "es:ListDomainNames",
                                     "logs:CreateLogGroup",
+                                    "logs:CreateLogStream",
                                     "logs:DescribeLogGroups",
                                     "logs:ListTagsLogGroup",
                                     "logs:PutRetentionPolicy",
+                                    "logs:PutLogEvents",
                                     "sns:CreateTopic",
                                     "sns:Get*",
                                     "sns:List*",
@@ -693,6 +308,16 @@
                                 ],
                                 "Resource": "*"
                             },
+                            {
+                                "Sid": "CodeCommitPolicy",
+                                "Effect": "Allow",
+                                "Action": [
+                                  "codecommit:GitPull"
+                                ],
+                                "Resource": [
+                                  "*"
+                                ]
+                              },
                             {
                                 "Effect": "Allow",
                                 "Action": [
@@ -778,20 +403,62 @@
                 }]
             }
         },
-        "updateStackTaskLogGroup": {
-            "Type": "AWS::Logs::LogGroup",
+        "updateStack": {
+            "Type": "AWS::CodeBuild::Project",
             "Properties": {
-                "LogGroupName": {
-                    "Fn::Join": ["", ["/ecs/", {
-                        "Fn::Join": ["-", [{
-                            "Ref": "AWS::StackName"
-                        }, {
-                            "Ref": "TaskName"
-                        }]]
-                    }]]
-                }
+              "Name": {
+                "Fn::Join": ["-", [{
+                    "Ref": "AWS::StackName"
+                }, "updateStack"]]
+            },
+              "Description": "Updates the furnace stack",
+              "ServiceRole": { "Fn::GetAtt": [ "updateStackTaskRole", "Arn" ] },
+              "Artifacts": {
+                "Type": "no_artifacts"
+              },
+              "Environment": {
+                "Type": "LINUX_CONTAINER",
+                "ComputeType": "BUILD_GENERAL1_SMALL",
+                "Image": "projectfurnace/deploy-aws",
+                "EnvironmentVariables": [
+                            {"Name": "GIT_USERNAME",
+                            "Value": {
+                                "Fn::If": ["GitUsernameDefined", {
+                                    "Ref": "GitUsername"
+                                }, {
+                                    "Ref": "AWS::NoValue"
+                                }]
+                            }},
+                            {"Name": "CLUSTER",
+                                "Value": {
+                                "Fn::Join": ["-", [{
+                                    "Ref": "AWS::StackName"
+                                }, {
+                                    "Ref": "ClusterName"
+                                }]]
+                            }},
+                            {"Name": "BUILD_BUCKET",
+                                "Value": {
+                                "Ref": "ArtifactBucket"
+                            }},
+                            {"Name": "PLATFORM",
+                                "Value": "aws"},
+                                {"Name": "FURNACE_INSTANCE",
+                                    "Value": {
+                                "Ref": "AWS::StackName"
+                            }},
+                            {"Name": "SOPS_KMS_ARN",
+                                "Value": {
+                                "Fn::GetAtt": ["stateKMS", "Arn"]
+                            }}
+                ]
+              },
+              "Source": {
+                "Type": "NO_SOURCE",
+                "BuildSpec": "version: 0.2\nphases:\n  build:\n    commands:\n      - cd /app\n      - /app/deploy_aws.sh"
+              }
             }
-        },
+          },
         "deployExecLambdaRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
@@ -819,24 +486,16 @@
                         "Statement": [{
                                 "Effect": "Allow",
                                 "Action": [
-                                    "ecs:SubmitTaskStateChange",
-                                    "ecs:RunTask",
-                                    "ecs:StartTask",
-                                    "ecs:StopTask"
-                                ],
-                                "Resource": "arn:aws:ecs:*:*:*"
-                            },
-                            {
-                                "Effect": "Allow",
-                                "Action": [
-                                    "iam:GetRole",
-                                    "iam:PassRole"
+                                    "codebuild:StartBuild"
                                 ],
                                 "Resource": {
-                                    "Fn::GetAtt": [
-                                        "updateStackTaskRole",
-                                        "Arn"
-                                    ]
+                                    "Fn::Join": ["", ["arn:aws:codebuild:", {
+                                        "Ref": "AWS::Region"
+                                    }, ":", {
+                                        "Ref": "AWS::AccountId"
+                                    }, ":project/",{
+                                        "Ref": "AWS::StackName"
+                                    }, "-updateStack"]]
                                 }
                             }
                         ]
@@ -868,16 +527,6 @@
                 },
                 "Environment": {
                     "Variables": {
-                        "TASK_DEFINITION": {
-                            "Fn::Join": ["-", [{
-                                "Ref": "AWS::StackName"
-                            }, {
-                                "Ref": "TaskName"
-                            }]]
-                        },
-                        "CONTAINER_NAME": {
-                            "Ref": "TaskContainerName"
-                        },
                         "GIT_USERNAME": {
                             "Fn::If": ["GitUsernameDefined", {
                                 "Ref": "GitUsername"
