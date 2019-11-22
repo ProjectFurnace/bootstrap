@@ -212,7 +212,8 @@
                                     "es:*",
                                     "firehose:*",
                                     "redshift:*",
-                                    "dynamodb:*"
+                                    "dynamodb:*",
+                                    "apigateway:*"
                                 ],
                                 "Resource": [{
                                         "Fn::Join": [":", ["arn:aws:lambda", {
@@ -258,6 +259,11 @@
                                         }, "*"]]
                                     },
                                     {
+                                        "Fn::Join": [":", ["arn:aws:execute-api:", {
+                                            "Ref": "AWS::AccountId"
+                                        }, "*"]]
+                                    },
+                                    {
                                         "Fn::Join": [":", ["arn:aws:dynamodb", {
                                             "Ref": "AWS::Region"
                                         }, {
@@ -274,6 +280,7 @@
                                     "lambda:UpdateEventSourceMapping",
                                     "lambda:GetEventSourceMapping",
                                     "ec2:*",
+                                    "iot:*",
                                     "ecr:CreateRepository",
                                     "ecr:GetAuthorizationToken",
                                     "ecs:CreateCluster",
