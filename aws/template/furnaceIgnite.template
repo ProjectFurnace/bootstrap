@@ -560,7 +560,7 @@
                         }
                     }
                 },
-                "Runtime": "nodejs8.10",
+                "Runtime": "nodejs12.x",
                 "Timeout": 30,
                 "MemorySize": 128
             }
@@ -610,7 +610,7 @@
                 "Role": {
                     "Fn::GetAtt": ["deployTriggerLambdaRole", "Arn"]
                 },
-                "Runtime": "nodejs8.10",
+                "Runtime": "nodejs12.x",
                 "Timeout": 30,
                 "MemorySize": 128,
                 "Environment": {
