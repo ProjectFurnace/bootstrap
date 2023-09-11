@@ -1,30 +1,32 @@
-const AWS = require('aws-sdk');
-const https = require('https');
-const crypto = require('crypto');
-const yaml = require('yamljs');
+const AWS = require("aws-sdk");
+const https = require("https");
+const crypto = require("crypto");
+const yaml = require("yamljs");
 
-const sns = new AWS.SNS({ apiVersion: '2010-03-31' });
-const sm = new AWS.SecretsManager({ apiVersion: '2017-10-17' });
+const sns = new AWS.SNS({ apiVersion: "2010-03-31" });
+const sm = new AWS.SecretsManager({ apiVersion: "2017-10-17" });
 
 // Do HTTPS request
 function doRequest(options, postData) {
   return new Promise((resolve, reject) => {
     const buffers = [];
-    const req = https.request(options, (res) => {
-      res.on('data', (buffer) => {
-        buffers.push(buffer);
-      });
+    const req = https
+      .request(options, (res) => {
+        res.on("data", (buffer) => {
+          buffers.push(buffer);
+        });
 
-      res.on('end', () => {
-        if (res.statusCode === 200 || res.statusCode === 201) {
-          resolve(Buffer.concat(buffers).toString());
-        } else {
-          reject(Buffer.concat(buffers));
-        }
+        res.on("end", () => {
+          if (res.statusCode === 200 || res.statusCode === 201) {
+            resolve(Buffer.concat(buffers).toString());
+          } else {
+            reject(Buffer.concat(buffers));
+          }
+        });
+      })
+      .on("error", (error) => {
+        reject(error);
       });
-    }).on('error', (error) => {
-      reject(error);
-    });
 
     if (postData) {
       req.write(postData);
@@ -46,15 +48,23 @@ function getSM(name) {
 async function verifyGitSecret(headers, stringBody) {
   if (process.env.DEBUG) {
     // eslint-disable-next-line no-console
-    console.log('verifying git secret...');
+    console.log("verifying git secret...");
   }
-  if (headers['X-Hub-Signature']) {
+  if (headers["X-Hub-Signature"]) {
     // Get secret from secret store
-    const gitSecret = await getSM(process.env.FURNACE_INSTANCE.concat('/GitHookSecret'));
+    const gitSecret = await getSM(
+      process.env.FURNACE_INSTANCE.concat("/GitHookSecret")
+    );
     if (gitSecret.SecretString) {
       try {
-        const signature = `sha1=${crypto.createHmac('sha1', gitSecret.SecretString).update(stringBody).digest('hex')}`;
-        return crypto.timingSafeEqual(Buffer.from(headers['X-Hub-Signature']), Buffer.from(signature));
+        const signature = `sha1=${crypto
+          .createHmac("sha1", gitSecret.SecretString)
+          .update(stringBody)
+          .digest("hex")}`;
+        return crypto.timingSafeEqual(
+          Buffer.from(headers["X-Hub-Signature"]),
+          Buffer.from(signature)
+        );
       } catch (e) {
         return false;
       }
@@ -67,12 +77,13 @@ async function verifyGitSecret(headers, stringBody) {
 async function verifyApiKey(headers) {
   if (process.env.DEBUG) {
     // eslint-disable-next-line no-console
-    console.log('verifying api key...');
+    console.log("verifying api key...");
   }
-  if (headers['X-API-Key']) {
+  const key = headers["X-API-Key"] || headers["x-api-key"];
+  if (key) {
     // Get secret from secret store
-    const apiKey = await getSM(process.env.FURNACE_INSTANCE.concat('/ApiKey'));
-    if (apiKey.SecretString === headers['X-API-Key']) {
+    const apiKey = await getSM(process.env.FURNACE_INSTANCE.concat("/ApiKey"));
+    if (apiKey.SecretString === key) {
       return true;
     }
   }
@@ -91,8 +102,11 @@ exports.handler = async (event, context, callback) => {
 
     if (body.deployment) {
       // first let's validate the github signature
-      if (!await verifyGitSecret(event.headers, event.body)) {
-        callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+      if (!(await verifyGitSecret(event.headers, event.body))) {
+        callback(null, {
+          statusCode: 403,
+          body: JSON.stringify({ msg: "Github signature validation failed" }),
+        });
         return;
       }
 
@@ -110,76 +124,104 @@ exports.handler = async (event, context, callback) => {
       const publishTextPromise = sns.publish(params).promise();
 
       // Handle promise's fulfilled/rejected states
-      await publishTextPromise.then((data) => {
-        if (process.env.DEBUG) {
-          // eslint-disable-next-line no-console
-          console.log(`Message ${params.Message} sent to the topic ${params.TopicArn} with ID ${data.MessageId}`);
-        }
-        callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Deployment successfully started' }) });
-      }).catch((err) => {
-        if (process.env.DEBUG) {
-          // eslint-disable-next-line no-console
-          console.error(err, err.stack);
-        }
-        callback(null, { statusCode: 500, body: JSON.stringify({ error: 'Something went wrong...' }) });
-      });
-    // this is just a test hook from github
-    } else if (body.hook && body.hook.type === 'Repository') {
+      await publishTextPromise
+        .then((data) => {
+          if (process.env.DEBUG) {
+            // eslint-disable-next-line no-console
+            console.log(
+              `Message ${params.Message} sent to the topic ${params.TopicArn} with ID ${data.MessageId}`
+            );
+          }
+          callback(null, {
+            statusCode: 200,
+            body: JSON.stringify({ msg: "Deployment successfully started" }),
+          });
+        })
+        .catch((err) => {
+          if (process.env.DEBUG) {
+            // eslint-disable-next-line no-console
+            console.error(err, err.stack);
+          }
+          callback(null, {
+            statusCode: 500,
+            body: JSON.stringify({ error: "Something went wrong..." }),
+          });
+        });
+      // this is just a test hook from github
+    } else if (body.hook && body.hook.type === "Repository") {
       if (await verifyGitSecret(event.headers, event.body)) {
-        callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Github test hook received' }) });
+        callback(null, {
+          statusCode: 200,
+          body: JSON.stringify({ msg: "Github test hook received" }),
+        });
       } else {
-        callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+        callback(null, {
+          statusCode: 403,
+          body: JSON.stringify({ msg: "Github signature validation failed" }),
+        });
       }
       return;
-    } else if (body.repository || (body.remoteUrl && body.commitRef && body.environment)) {
-      let owner = '';
-      let repo = '';
-      let branch = '';
-      let gitToken = '';
+    } else if (
+      body.repository ||
+      (body.remoteUrl && body.commitRef && body.environment)
+    ) {
+      let owner = "";
+      let repo = "";
+      let branch = "";
+      let gitToken = "";
 
       // depending on if this is direct from CLI or from hook, we need to do different parsing
       // first option is github hook
       if (body.repository) {
         // first let's validate the github signature
-        if (!await verifyGitSecret(event.headers, event.body)) {
-          callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'Github signature validation failed' }) });
+        if (!(await verifyGitSecret(event.headers, event.body))) {
+          callback(null, {
+            statusCode: 403,
+            body: JSON.stringify({ msg: "Github signature validation failed" }),
+          });
           return;
         }
         owner = body.repository.owner.login;
         repo = body.repository.name;
         branch = body.repository.default_branch;
       } else {
-        if (!await verifyApiKey(event.headers)) {
-          callback(null, { statusCode: 403, body: JSON.stringify({ msg: 'API KEY validation failed' }) });
+        if (!(await verifyApiKey(event.headers))) {
+          callback(null, {
+            statusCode: 403,
+            body: JSON.stringify({ msg: "API KEY validation failed" }),
+          });
           return;
         }
 
-        const parts = body.remoteUrl.split('/');
+        const parts = body.remoteUrl.split("/");
 
-        [,,, owner, repo] = parts;
+        [, , , owner, repo] = parts;
         branch = body.commitRef;
       }
 
       const stackYamlOptions = {
-        host: 'raw.githubusercontent.com',
+        host: "raw.githubusercontent.com",
         // eslint-disable-next-line prefer-template
-        path: '/' + owner + '/' + repo + '/' + branch + '/stack.yaml',
-        method: 'GET',
+        path: "/" + owner + "/" + repo + "/" + branch + "/stack.yaml",
+        method: "GET",
         headers: {
-          'User-Agent': 'Project Furnace',
+          "User-Agent": "Project Furnace",
         },
       };
 
-
       try {
-        gitToken = await getSM(process.env.FURNACE_INSTANCE.concat('/GitToken'));
+        gitToken = await getSM(
+          process.env.FURNACE_INSTANCE.concat("/GitToken")
+        );
         if (gitToken.SecretString) {
-          stackYamlOptions.headers.Authorization = 'token '.concat(gitToken.SecretString);
+          stackYamlOptions.headers.Authorization = "token ".concat(
+            gitToken.SecretString
+          );
         }
       } catch (e) {
         if (process.env.DEBUG) {
           // eslint-disable-next-line no-console
-          console.log('Error fetching GIT token from Secrets Manager', e);
+          console.log("Error fetching GIT token from Secrets Manager", e);
         }
       }
 
@@ -194,34 +236,44 @@ exports.handler = async (event, context, callback) => {
       const { environments } = stack;
 
       if (environments) {
-        const deploymentData = { owner, repo, ref: 'master' };
+        const deploymentData = { owner, repo, ref: "master" };
 
-        deploymentData.environment = (body.repository ? environments[0] : body.environment);
+        deploymentData.environment = body.repository
+          ? environments[0]
+          : body.environment;
 
         const postData = JSON.stringify(deploymentData);
 
         const deploymentOptions = {
-          host: 'api.github.com',
+          host: "api.github.com",
           // eslint-disable-next-line prefer-template
-          path: '/repos/' + owner + '/' + repo + '/deployments',
-          method: 'POST',
+          path: "/repos/" + owner + "/" + repo + "/deployments",
+          method: "POST",
           headers: {
-            Accept: 'application/vnd.github.v3+json',
-            'Content-type': 'application/json',
-            'Content-Length': postData.length,
-            'User-Agent': 'Project Furnace',
+            Accept: "application/vnd.github.v3+json",
+            "Content-type": "application/json",
+            "Content-Length": postData.length,
+            "User-Agent": "Project Furnace",
           },
         };
 
         if (gitToken.SecretString) {
-          deploymentOptions.headers.Authorization = 'Bearer '.concat(gitToken.SecretString);
+          deploymentOptions.headers.Authorization = "Bearer ".concat(
+            gitToken.SecretString
+          );
         }
 
         await doRequest(deploymentOptions, postData);
 
-        callback(null, { statusCode: 200, body: JSON.stringify({ msg: 'Deployment successfully triggered' }) });
+        callback(null, {
+          statusCode: 200,
+          body: JSON.stringify({ msg: "Deployment successfully triggered" }),
+        });
       }
     }
-    callback(null, { statusCode: 422, body: JSON.stringify({ error: 'Request is missing some parameter' }) });
+    callback(null, {
+      statusCode: 422,
+      body: JSON.stringify({ error: "Request is missing some parameter" }),
+    });
   }
 };
