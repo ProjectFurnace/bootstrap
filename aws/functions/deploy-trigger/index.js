@@ -263,12 +263,25 @@ exports.handler = async (event, context, callback) => {
           );
         }
 
-        await doRequest(deploymentOptions, postData);
+        const deploymentResponse = await doRequest(deploymentOptions, postData);
+        const deploymentBody = JSON.parse(deploymentResponse);
 
-        callback(null, {
-          statusCode: 200,
-          body: JSON.stringify({ msg: "Deployment successfully triggered" }),
-        });
+        const deploymentId = deploymentBody?.id;
+
+        if (deploymentId) {
+          callback(null, {
+            statusCode: 200,
+            body: JSON.stringify({
+              msg: "Deployment successfully triggered",
+              deploymentId,
+            }),
+          });
+        } else {
+          callback(null, {
+            statusCode: 422,
+            body: JSON.stringify({ error: "Unable to get deployment id" }),
+          });
+        }
       }
     }
     callback(null, {
